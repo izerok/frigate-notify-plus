@@ -48,14 +48,14 @@ Web 控制台（端口 `8000`）：侧边栏工作台，带状态仪表盘、通
 Release 都是 prerelease，形式是 Docker 镜像的 `.tar.gz` 包加 `sha256sums.txt`，没有镜像仓库版。最新版是 `v0.1.0`。把两个文件都下载下来，校验通过后加载并运行：
 
 ```bash
-curl -LO https://github.com/izerok/frigate-notify-plus/releases/download/v0.1.0/frigate-notify-plus-webui-1ade6c9.tar.gz
+curl -LO https://github.com/izerok/frigate-notify-plus/releases/download/v0.1.0/frigate-notify-plus-webui-52e7e9a.tar.gz
 curl -LO https://github.com/izerok/frigate-notify-plus/releases/download/v0.1.0/sha256sums.txt
 sha256sum -c sha256sums.txt
-docker load -i frigate-notify-plus-webui-1ade6c9.tar.gz
+docker load -i frigate-notify-plus-webui-52e7e9a.tar.gz
 docker run -d --name frigate-notify-plus --network host \
   -v /srv/frigate-notify-plus:/data \
   -e TZ=Asia/Shanghai \
-  frigate-notify-plus:webui-1ade6c9
+  frigate-notify-plus:webui-52e7e9a
 ```
 
 把宿主机目录挂到 `/data`（`/srv/frigate-notify-plus` 换成你自己的路径），并把 `TZ` 设成你的时区——定时总结按容器本地时间跑。docker-compose 示例和其他安装方式见 [docs/install.md](docs/install.md)。
