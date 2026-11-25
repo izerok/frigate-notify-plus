@@ -1,0 +1,49 @@
+name: skin-argon-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-skin-argon:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge feature/skin-argon into main
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          git fetch origin feature/skin-argon
+          git merge --no-ff --no-commit origin/feature/skin-argon
+          # Workflow files cannot be pushed by the runner token (no `workflows`
+          # scope is accepted by the parser here), so keep main's workflow
+          # files in this merge; they are updated directly via API afterwards.
+          git checkout origin/main -- .github/workflows/
+          git commit -m "feat: add Argon theme"
+          git log --oneline -5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          # notifier/smtp.go has a pre-existing gofmt nit upstream; anything else dirty fails the job.
+          UNFORMATTED=$(gofmt -l . | grep -v '^notifier/smtp.go$' || true)
+          if [ -n "$UNFORMATTED" ]; then echo "gofmt dirty: $UNFORMATTED"; exit 1; fi
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-skin-argon:test .
+
+      - name: Push merged main
+        run: git push origin main

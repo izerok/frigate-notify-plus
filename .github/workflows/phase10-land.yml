@@ -1,0 +1,49 @@
+name: phase10-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-phase10:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge polish/phase10 into main
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          git fetch origin polish/phase10
+          git merge --no-ff --no-commit origin/polish/phase10
+          # Workflow files cannot be pushed by the runner token (no `workflows`
+          # scope is accepted by the parser here), so keep main's workflow
+          # files in this merge; they are updated directly via API afterwards.
+          git checkout origin/main -- .github/workflows/
+          git commit -m "style: phase 10 - Corporate Clean default theme (StyleKit)" -m "The default (light) theme is remapped to StyleKit's Corporate Clean: Corporate Blue #1e40af as the only primary, Slate Mist #f8fafc canvas, Action Blue #3b82f6 reserved for focus rings and selected states, Confirm Green #10b981 for success fills, Slate #64748b secondary text. Palette-neutral component rules now apply across all four themes: 12px card / 8px control / 999px badge radii, rest + hover two-level slate shadows, focus rings with a 2px offset, primary-button hover lift and active scale, input focus ring, pill badges at 12px/500, all transitions <= 200ms ease-out, body 16px/1.65. Two recorded derivations keep every text pair at WCAG AA: --fn-surface-2 is lightened past slate-100 (Slate small text would sit at 4.34:1 on #f1f5f9) with panel definition carried by the hairline border, and success badge text uses a darkened --fn-ok-text #047857 because #10b981 on the light-green badge background only reaches 2.24:1. Frontend only (webui/index.html): Direction A structure, content, ids and collectConfig behaviour unchanged; dark/green/argon keep their palettes."
+          git log --oneline -5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          # notifier/smtp.go has a pre-existing gofmt nit upstream; anything else dirty fails the job.
+          UNFORMATTED=$(gofmt -l . | grep -v '^notifier/smtp.go$' || true)
+          if [ -n "$UNFORMATTED" ]; then echo "gofmt dirty: $UNFORMATTED"; exit 1; fi
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-phase10:test .
+
+      - name: Push merged main
+        run: git push origin main

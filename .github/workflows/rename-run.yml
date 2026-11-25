@@ -1,0 +1,79 @@
+name: rename-run
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rename:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: rename/plus
+
+      - name: Mechanical rename to frigate-notify-plus
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          # --- targeted pre-fixes (owner/domain swaps a bare sed would corrupt) ---
+          sed -i 's|ghcr.io/0x2142/frigate-notify|ghcr.io/izerok/frigate-notify-plus|g' docker-compose.yml
+          sed -i 's|https://frigate-notify.0x2142.com/latest/config/file/#quiet-hours|file.md#quiet-hours|g' docs/config/profilesandfilters.md
+          sed -i 's|https://frigate-notify.0x2142.com/config/file/|https://github.com/izerok/frigate-notify-plus/blob/main/docs/config/file.md|g' example-config.yml
+          sed -i 's|https://github.com/0x2142/frigate-notify|https://github.com/izerok/frigate-notify-plus|g' docs/config/templates.md
+          # --- Go module path (also rewrites the License/Contact URLs in api/router.go) ---
+          grep -rl 'github.com/0x2142/frigate-notify' --include='*.go' --include='go.mod' . | xargs -r sed -i 's|github.com/0x2142/frigate-notify|github.com/izerok/frigate-notify-plus|g'
+          # --- display names (changelog excluded: historical upstream record) ---
+          grep -rl 'Frigate Notify' --exclude-dir=.git --exclude='*.png' . | grep -v '^./docs/changelog.md$' | grep -v '^./.github/workflows/' | xargs -r perl -pi -e 's/Frigate Notify(?! Plus)/Frigate Notify Plus/g'
+          grep -rl 'Frigate-Notify' --exclude-dir=.git --exclude='*.png' . | grep -v '^./docs/changelog.md$' | grep -v '^./.github/workflows/' | xargs -r perl -pi -e 's/Frigate-Notify(?!-Plus)/Frigate-Notify-Plus/g'
+          # --- bare project name (lookahead protects already-renamed text and the kept localStorage keys) ---
+          grep -rl 'frigate-notify' --exclude-dir=.git --exclude='*.png' . \
+            | grep -v '^./docs/changelog.md$' \
+            | grep -v '^./docs/config/file.md$' \
+            | grep -v '^./docs/index.md$' \
+            | grep -v '^./docs/install.md$' \
+            | grep -v '^./README.md$' \
+            | grep -v '^./mkdocs.yml$' \
+            | grep -v '^./docs/CNAME$' \
+            | grep -v '^./.github/workflows/' \
+            | grep -v '^./.github/workflows/baseline-merge.yml$' \
+            | grep -v '^./.github/ISSUE_TEMPLATE/' \
+            | xargs -r perl -pi -e 's/frigate-notify(?!-plus|-theme|-density)/frigate-notify-plus/g'
+          # --- targeted leftovers ---
+          sed -i 's/Name: "Matt Schmitz"/Name: "frigate-notify-plus"/' api/router.go
+          rm -f docs/CNAME
+          # The new module path sorts differently inside import groups
+          # (izerok > danielgtaylor), so reformat what the rename dirtied.
+          # notifier/smtp.go keeps its pre-existing upstream gofmt nit.
+          DIRTY=$(gofmt -l . | grep -v '^notifier/smtp.go$' || true)
+          if [ -n "$DIRTY" ]; then echo "$DIRTY" | xargs gofmt -w; fi
+          git status --short
+          echo "--- residual 0x2142 (expect: changelog, baseline-merge t1m, issue templates, file.md:893) ---"
+          grep -rn '0x2142' --exclude-dir=.git --exclude='*.png' . || true
+          echo "--- residual bare frigate-notify (expect: changelog, file.md, issue templates, kept localStorage keys) ---"
+          grep -rn 'frigate-notify' --exclude-dir=.git --exclude='*.png' . | grep -v 'frigate-notify-plus' | grep -v 'frigate-notify-theme' | grep -v 'frigate-notify-density' || true
+          git add -A
+          git diff --cached --stat
+          git commit -m "rename: frigate-notify -> frigate-notify-plus (mechanical pass)" -m "Module path github.com/0x2142/frigate-notify -> github.com/izerok/frigate-notify-plus; binary/image/tar names, display strings, MQTT client ID default, and docs cross-links updated. Intentionally kept: docs/changelog.md (historical upstream record), docs/config/file.md + README/docs/index/install/mkdocs (hand rewrites follow), docs/CNAME removed (upstream docs domain), localStorage keys frigate-notify-theme/density (existing users keep saved preferences), baseline-merge t1m remote and issue-template upstream links. Workflow files (.github/workflows/) are NOT touched by this run: the Actions token cannot push workflow-file changes (no `workflows` scope is accepted by the parser here), so they are updated directly via API afterwards."
+          git push origin HEAD:rename/plus
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          # notifier/smtp.go has a pre-existing gofmt nit upstream; anything else dirty fails the job.
+          UNFORMATTED=$(gofmt -l . | grep -v '^notifier/smtp.go$' || true)
+          if [ -n "$UNFORMATTED" ]; then echo "gofmt dirty: $UNFORMATTED"; exit 1; fi
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-rename:test .

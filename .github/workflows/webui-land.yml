@@ -1,0 +1,46 @@
+name: webui-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-webui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Web UI integration files
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          git fetch origin webui/integration
+          git checkout origin/webui/integration -- webui/index.html notifier/history.go notifier/history_test.go notifier/templates_fs.go notifier/templates_fs_test.go api/v1/history.go api/v1/history_test.go api/v1/templates.go api/v1/templates_test.go api/v1/config_yaml.go api/v1/config_yaml_test.go config/yaml_roundtrip_test.go main.go api/router.go api/v1/v1_routes.go config/default.go config/config.go models/config.go notifier/alerts.go
+          # Format before committing so the landed files are gofmt-clean.
+          gofmt -w notifier/history.go notifier/history_test.go notifier/templates_fs.go notifier/templates_fs_test.go api/v1/history.go api/v1/history_test.go api/v1/templates.go api/v1/templates_test.go api/v1/config_yaml.go api/v1/config_yaml_test.go config/yaml_roundtrip_test.go main.go api/router.go api/v1/v1_routes.go config/default.go config/config.go models/config.go notifier/alerts.go
+          git add webui/index.html notifier/history.go notifier/history_test.go notifier/templates_fs.go notifier/templates_fs_test.go api/v1/history.go api/v1/history_test.go api/v1/templates.go api/v1/templates_test.go api/v1/config_yaml.go api/v1/config_yaml_test.go config/yaml_roundtrip_test.go main.go api/router.go api/v1/v1_routes.go config/default.go config/config.go models/config.go notifier/alerts.go
+          git commit -m "webui: embed console + history/templates/YAML APIs + setup mode" -m "Single-page Chinese console embedded via go:embed on the :8000 API server (API enabled by default, LAN-only, no auth). Adds GET /api/v1/history (in-memory ring buffer recorded in sendAlert), GET/PUT /api/v1/templates (validated, disk overlay wins over embedded), GET/PUT /api/v1/config/yaml (koanf-compatible keys), and setup mode when no config file exists. Adds yaml tags to the config structs so config.Save round-trips (previously most keys were written lowercased and lost on reload). Also fixes the quiet-hours pattern escapes (single backslash is not a valid Go escape in a struct tag, so go vet failed and huma never saw the pattern)."
+          git log --oneline -3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          gofmt -l .
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-webui:test .
+
+      - name: Push merged main
+        run: git push origin main

@@ -1,0 +1,47 @@
+name: i18n-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-i18n:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply i18n webui file
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          # This workflow runs ON main, so the checkout already is main:
+          # pull the new webui/index.html over from the feature branch.
+          git fetch origin main feature/i18n-en
+          git checkout main
+          git checkout origin/feature/i18n-en -- webui/index.html
+          git add webui/index.html
+          git commit -m "feat(webui): English language support (中文/EN switcher)" -m "Adds a complete i18n layer to the single-file Web UI: a 527-key zh/en dictionary covering every user-visible frontend string (nav, all config sections incl. the plain-language FIELD_HELP texts, routing/escalation/schedule editors, threat priority, templates, the 4-step wizard, status, history, dialogs, toasts and validation messages), plus EN twins for field labels/help/enum labels. A 中文|EN segmented switcher sits in the sidebar (and in the theme popover for mobile); the choice persists in localStorage (frigate-notify-lang), the default stays Chinese, and the stored language is applied before first paint via the head anti-flash script. Switching re-renders in place without reload and harvests unsaved config edits first, so no edits are lost. NOT translated: config field paths/keys/values, provider names, user data, and backend-generated strings (history details written by Go stay as-is). Also rides along: the two review fixes F2 (status notification tile shows a loading state until notif_state is known; refreshNotifState re-runs loadStatus on the status page) and F3 (GenAI/threat-priority cards use their own dirty-badge keys alerts.general.genai / alerts.general.threat_priority, which also scopes their per-card restore-defaults)."
+          git log --oneline -3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          gofmt -l .
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-i18n:test .
+
+      - name: Push merged main
+        run: git push origin main

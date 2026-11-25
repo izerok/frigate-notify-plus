@@ -1,0 +1,23 @@
+app:
+  mode: reviews
+  api:
+    enabled: true
+    port: 8000
+frigate:
+  server: http://127.0.0.1:18080
+  public_url: http://127.0.0.1:18080
+  webapi:
+    enabled: false
+  mqtt:
+    enabled: true
+    server: 127.0.0.1
+    port: 1883
+alerts:
+  general:
+    title: Verify Alert
+    genai:
+      enabled: true
+      update_notif: true
+  webhook:
+    - enabled: true
+      server: http://127.0.0.1:18081/hook

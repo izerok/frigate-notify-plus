@@ -1,0 +1,49 @@
+name: phase9-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-phase9:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge polish/phase9 into main
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          git fetch origin polish/phase9
+          git merge --no-ff --no-commit origin/polish/phase9
+          # Workflow files cannot be pushed by the runner token (no `workflows`
+          # scope is accepted by the parser here), so keep main's workflow
+          # files in this merge; they are updated directly via API afterwards.
+          git checkout origin/main -- .github/workflows/
+          git commit -m "polish: phase 9 - sidebar workbench layout (Direction A)" -m "The approved Direction A structure replaces the two-level shell (top tab bar + config inner sub-nav) with one navigation tree in a fixed left sidebar: brand/version, a resident status block fed by the existing /status and notif_state loads, a Monitor group (status/history/templates), a Config group with all-config plus the 8 sections, and setup; the theme switcher, notif state and test buttons move to the sidebar foot. On mobile the sidebar hides and a fixed bottom bar carries the five destinations while config sections become a horizontal scroll strip above the form. Frontend only (webui/index.html): no feature, field, preset or page removed; all ids and collectConfig behaviour unchanged; all four themes kept."
+          git log --oneline -5
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          # notifier/smtp.go has a pre-existing gofmt nit upstream; anything else dirty fails the job.
+          UNFORMATTED=$(gofmt -l . | grep -v '^notifier/smtp.go$' || true)
+          if [ -n "$UNFORMATTED" ]; then echo "gofmt dirty: $UNFORMATTED"; exit 1; fi
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-phase9:test .
+
+      - name: Push merged main
+        run: git push origin main

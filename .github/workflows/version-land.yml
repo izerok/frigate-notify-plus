@@ -1,0 +1,47 @@
+name: version-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-version:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply version-line changes
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          # This workflow runs ON main, so the checkout already is main:
+          # pull the changed files over from the chore branch.
+          git fetch origin main chore/version-0.1.0
+          git checkout main
+          git checkout origin/chore/version-0.1.0 -- config/internal.go docs/changelog.md
+          git add config/internal.go docs/changelog.md
+          git commit -m "chore: start independent version line at v0.1.0" -m "config/internal.go: Internal.AppVersion v0.5.4 -> v0.1.0. This is the single source for the app version (startup log, /api/v1/version + status payload, outbound User-Agent, huma API title) — the project no longer follows upstream frigate-notify versioning; the v0.5.4-webui.* prerelease series ends at v0.5.4-webui.15. docs/changelog.md: the fork's Unreleased section becomes the v0.1.0 entry (version-line announcement, redesigned Web UI, new default palette, bilingual Web UI, two UI fixes, slimmed README with screenshots); upstream history below is untouched. (The release-tar workflow's default tag was already updated to v0.1.0 directly on main.)"
+          git log --oneline -3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, vet, build and test
+        run: |
+          gofmt -l .
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-version:test .
+
+      - name: Push merged main
+        run: git push origin main

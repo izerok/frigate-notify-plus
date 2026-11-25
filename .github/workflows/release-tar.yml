@@ -1,0 +1,46 @@
+name: Release image tar
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag
+        required: true
+        default: v0.1.0
+
+permissions:
+  contents: write
+
+jobs:
+  release-tar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image and save tar
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          docker build -t frigate-notify-plus:webui-$SHORT_SHA .
+          docker save frigate-notify-plus:webui-$SHORT_SHA | gzip > frigate-notify-plus-webui-$SHORT_SHA.tar.gz
+          sha256sum frigate-notify-plus-webui-$SHORT_SHA.tar.gz > sha256sums.txt
+          ls -lh frigate-notify-plus-webui-*.tar.gz sha256sums.txt
+
+      - name: Create prerelease and upload tar
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          gh release create "$TAG" --prerelease \
+            --title "frigate-notify-plus $TAG (Web UI + GenAI)" \
+            --notes "Frigate Notify fork with GenAI review summaries, Telegram caption edits, per-camera notification cooldown, and a Chinese Web UI (no auth, LAN-only).
+
+          Image inside the tar: frigate-notify-plus:webui-$SHORT_SHA
+
+          Try it:
+            docker load -i frigate-notify-plus-webui-$SHORT_SHA.tar.gz
+            docker run -d --name frigate-notify-plus --network host frigate-notify-plus:webui-$SHORT_SHA
+          Then open http://<host>:8000 and follow the setup wizard (no config file needed).
+
+          Verify with sha256sums.txt. Do not expose port 8000 publicly: the Web UI has no authentication." \
+            frigate-notify-plus-webui-$SHORT_SHA.tar.gz sha256sums.txt

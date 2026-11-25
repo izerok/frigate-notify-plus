@@ -1,0 +1,68 @@
+# Site Info
+site_name: Frigate Notify Plus
+site_url: https://izerok.github.io/frigate-notify-plus/
+site_author: izerok
+repo_name: izerok/frigate-notify-plus
+repo_url: https://github.com/izerok/frigate-notify-plus
+
+# Site Theme
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme)"
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      toggle:
+        icon: material/weather-night  
+        name: Switch to dark mode    
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.footer
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.expand
+    - navigation.indexes 
+    - navigation.top
+    - toc.integrate 
+    - content.code.copy
+
+# Site Nav
+nav:
+  - Home: index.md
+  - Install: install.md
+  - Config: 
+     - config/index.md
+     - Config File: config/file.md
+     - Config Options: config/options.md 
+     - Alert Profiles & Filters: config/profilesandfilters.md
+     - Templates: config/templates.md
+     - Sample Config: config/sample.md
+  - API: api.md
+  - Changelog: changelog.md 
+  
+# Extras
+extra:
+  version:
+    provider: mike
+  social:
+    - icon: fontawesome/brands/github 
+      link: https://github.com/izerok
+
+# Plugins
+markdown_extensions:
+  - admonition
+  - abbr
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences

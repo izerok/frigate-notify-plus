@@ -1,0 +1,52 @@
+name: polish-land
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  land-polish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply Phase 5 polish files
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          # This workflow runs ON polish/phase5, so the checkout already has
+          # the new files: switch to main first, then apply the branch files,
+          # otherwise git commit has nothing to commit.
+          git fetch origin main polish/phase5
+          git checkout main
+          git checkout origin/polish/phase5 -- .github/workflows/polish-land.yml api/v1/config_pointer_test.go config/yaml_roundtrip_test.go models/pointers.go notifier/routing_test.go notifier/routing.go api/v1/config.go api/v1/genai_summarize.go api/v1/genai_summarize_test.go api/v1/notiftest.go api/v1/v1_routes.go config/schedule.go config/validate.go config/validate_phase5_test.go main.go models/config.go models/internal.go notifier/alerts.go notifier/bark.go notifier/bark_test.go notifier/escalation.go notifier/escalation_test.go notifier/filters.go notifier/filters_test.go notifier/history.go notifier/ratecap.go notifier/ratecap_test.go notifier/schedule.go notifier/schedule_test.go notifier/summary.go test/verify/check.sh test/verify/mock_frigate.py test/verify/publish_mqtt.py test/verify/webhook_catcher.py webui/index.html
+          # Format before committing so the landed files are gofmt-clean.
+          # (notifier/smtp.go has a pre-existing gofmt nit upstream; it is
+          # intentionally not in this list and stays untouched.)
+          gofmt -w api/v1/config_pointer_test.go config/yaml_roundtrip_test.go models/pointers.go notifier/routing_test.go notifier/routing.go api/v1/config.go api/v1/genai_summarize.go api/v1/genai_summarize_test.go api/v1/notiftest.go api/v1/v1_routes.go config/schedule.go config/validate.go config/validate_phase5_test.go main.go models/config.go models/internal.go notifier/alerts.go notifier/bark.go notifier/bark_test.go notifier/escalation.go notifier/escalation_test.go notifier/filters.go notifier/filters_test.go notifier/history.go notifier/ratecap.go notifier/ratecap_test.go notifier/schedule.go notifier/schedule_test.go notifier/summary.go
+          git add .github/workflows/polish-land.yml api/v1/config_pointer_test.go config/yaml_roundtrip_test.go models/pointers.go notifier/routing_test.go notifier/routing.go api/v1/config.go api/v1/genai_summarize.go api/v1/genai_summarize_test.go api/v1/notiftest.go api/v1/v1_routes.go config/schedule.go config/validate.go config/validate_phase5_test.go main.go models/config.go models/internal.go notifier/alerts.go notifier/bark.go notifier/bark_test.go notifier/escalation.go notifier/escalation_test.go notifier/filters.go notifier/filters_test.go notifier/history.go notifier/ratecap.go notifier/ratecap_test.go notifier/schedule.go notifier/schedule_test.go notifier/summary.go test/verify/check.sh test/verify/mock_frigate.py test/verify/publish_mqtt.py test/verify/webhook_catcher.py webui/index.html
+          git commit -m "polish: phase 5 fix - pointer fields for routing/escalation/schedule zero values (huma default trap)" -m "Huma applies a field's `default:` tag to ANY zero value decoded from a JSON request body (parseBodyInto: `if item.IsZero()`), so a config PUT with an explicit routing target index 0, escalation min_threat 0, or schedule enabled false arrived as index -1, min_threat 1, and enabled true. The first webui-verify run on phase 5 failed on exactly this: the threat-1 GenAI update went to webhook#1 as well as webhook#0 because the routing rule's index 0 had become -1 (all profiles). Fix: RoutingTarget.Index, RoutingRule.MinThreat, EscalationRule.MinThreat and GenAISchedule.Enabled are now pointers (models/pointers.go) — huma only fills the default for a nil pointer, and an explicit 0/false arrives as a non-nil pointer that keeps its value. Config.Validate normalizes nils left by old files or YAML PUTs to the documented defaults, so GET responses and saved files always show explicit values. Regression tests: TestPutConfigKeepsExplicitZeros (real huma PUT through the live route table) and TestPointerDefaultsNormalize, plus a MinThreat 0 escalation rule in the YAML round-trip fixture."
+          git log --oneline -3
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          gofmt -l .
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go vet -tags goolm ./...
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Docker build check
+        run: docker build -t frigate-notify-plus-polish:test .
+
+      - name: Push merged main
+        run: git push origin main

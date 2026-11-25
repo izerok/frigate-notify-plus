@@ -1,0 +1,109 @@
+name: Web UI end-to-end verification
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t frigate-notify-plus-verify .
+
+      - name: Start mock services
+        run: |
+          pip install paho-mqtt
+          docker run -d --name mosquitto --network host eclipse-mosquitto:2
+          python3 test/verify/mock_frigate.py &
+          python3 test/verify/webhook_catcher.py &
+          for i in $(seq 1 20); do
+            curl -fsS http://127.0.0.1:18080/api/version && break || sleep 1
+          done
+          curl -fsS http://127.0.0.1:18080/api/version
+
+      - name: Run container (configured mode, data-dir mount)
+        run: |
+          mkdir -p "$RUNNER_TEMP/fn-data"
+          cp test/verify/verify_config.yml "$RUNNER_TEMP/fn-data/config.yml"
+          docker run -d --name fn-verify --network host \
+            -v "$RUNNER_TEMP/fn-data:/data" \
+            frigate-notify-plus-verify
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/api/v1/healthz && break || sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/api/v1/status
+
+      - name: MQTT walk-through + API checks
+        env:
+          DATA_DIR: ${{ runner.temp }}/fn-data
+        run: bash test/verify/check.sh
+
+      - name: Template persistence across restart
+        run: |
+          docker restart fn-verify
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/api/v1/healthz && break || sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/api/v1/templates | grep -q "VERIFY-MARKER" && echo "templates survive restart ok"
+          test -f "$RUNNER_TEMP/fn-data/templates/markdown.template" || { echo "FAIL: markdown.template missing from data dir after restart"; exit 1; }
+          grep -q "VERIFY-MARKER" "$RUNNER_TEMP/fn-data/templates/markdown.template" || { echo "FAIL: data-dir template lost VERIFY-MARKER after restart"; exit 1; }
+          echo "templates data dir ok after restart"
+          curl -fsS http://127.0.0.1:8000/api/v1/history > /tmp/history-after-restart.json
+          python3 - <<'EOF'
+          import json
+          h = json.load(open('/tmp/history-after-restart.json'))["history"]
+          assert len(h) >= 10, f"history lost entries across restart: {len(h)}"
+          assert any(e.get("genai_title") == "有人在门口" for e in h), h[:3]
+          assert any("定时总结" in e.get("detail", "") for e in h), h[:3]
+          print("history survive restart ok:", len(h), "entries")
+          EOF
+          test -f "$RUNNER_TEMP/fn-data/history.jsonl" || { echo "FAIL: history.jsonl missing from data dir after restart"; exit 1; }
+          grep -q "有人在门口" "$RUNNER_TEMP/fn-data/history.jsonl" || { echo "FAIL: history.jsonl lost the GenAI entry after restart"; exit 1; }
+          echo "history data dir ok after restart"
+
+      - name: Setup-mode check (empty data dir)
+        run: |
+          docker stop fn-verify
+          docker rm fn-verify
+          mkdir -p "$RUNNER_TEMP/fn-data-empty"
+          docker run -d --name fn-setup --network host \
+            -v "$RUNNER_TEMP/fn-data-empty:/data" \
+            frigate-notify-plus-verify
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:8000/api/v1/healthz && break || sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/api/v1/status | python3 -c "import json,sys; d=json.load(sys.stdin); assert d['status']['health']=='setup', d; print('setup health ok')"
+          curl -fsS http://127.0.0.1:8000/ | grep -qi "setup\|首次\|引导" && echo "setup page ok"
+          # Save a config through the Web UI API (built from GET defaults,
+          # like the setup wizard does): it must land in the data dir.
+          curl -fsS http://127.0.0.1:8000/api/v1/config > /tmp/setup-config-got.json
+          python3 - <<'EOF'
+          import json
+          c = json.load(open('/tmp/setup-config-got.json'))["config"]
+          c["frigate"]["server"] = "http://127.0.0.1:18080"
+          c["frigate"]["public_url"] = "http://127.0.0.1:18080"
+          c["frigate"]["mqtt"] = {"enabled": True, "server": "127.0.0.1", "port": 1883}
+          c["alerts"]["general"]["title"] = "Setup Mode Config"
+          c["alerts"]["webhook"] = [{"enabled": True, "server": "http://127.0.0.1:18081/hook"}]
+          json.dump({"config": c}, open('/tmp/setup-config-put.json', 'w'))
+          EOF
+          curl -fsS -X PUT -H 'Content-Type: application/json' --data @/tmp/setup-config-put.json http://127.0.0.1:8000/api/v1/config | grep -q '"status":"ok"'
+          sleep 5
+          test -f "$RUNNER_TEMP/fn-data-empty/config.yml" || { echo "FAIL: setup save did not land in data dir"; ls -R "$RUNNER_TEMP/fn-data-empty"; exit 1; }
+          grep -q "Setup Mode Config" "$RUNNER_TEMP/fn-data-empty/config.yml" || { echo "FAIL: saved config has wrong title"; exit 1; }
+          test -s "$RUNNER_TEMP/fn-data-empty/logs/frigate-notify.log" || { echo "FAIL: no log file in setup data dir"; exit 1; }
+          echo "setup save ok: config.yml + logs in data dir"
+
+      - name: Dump logs on failure
+        if: failure()
+        run: |
+          docker logs fn-verify || true
+          docker logs fn-setup || true
+          cat /tmp/webhook-posts.jsonl || true
+          ls -R "$RUNNER_TEMP/fn-data" "$RUNNER_TEMP/fn-data-empty" 2>/dev/null || true
+          tail -n 50 "$RUNNER_TEMP/fn-data/logs/frigate-notify.log" 2>/dev/null || true

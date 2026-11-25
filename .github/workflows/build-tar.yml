@@ -1,0 +1,32 @@
+name: Build image tar
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-tar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: |
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          echo "SHORT_SHA=$SHORT_SHA" >> $GITHUB_ENV
+          docker build -t frigate-notify-plus:webui-$SHORT_SHA .
+
+      - name: Save image as tar.gz
+        run: |
+          docker save frigate-notify-plus:webui-$SHORT_SHA | gzip > frigate-notify-plus-webui-$SHORT_SHA.tar.gz
+          ls -lh frigate-notify-plus-webui-*.tar.gz
+          sha256sum frigate-notify-plus-webui-*.tar.gz
+
+      - name: Upload tar artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frigate-notify-plus-tar
+          path: frigate-notify-plus-webui-*.tar.gz
+          retention-days: 7

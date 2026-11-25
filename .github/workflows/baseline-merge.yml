@@ -1,0 +1,71 @@
+name: baseline-merge
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  merge-baseline:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Merge telegram-clip-transcode into main
+        run: |
+          git config user.name "izerok"
+          git config user.email "izerok@users.noreply.github.com"
+          git fetch origin telegram-clip-transcode
+          git merge --no-ff origin/telegram-clip-transcode -m "merge: nikosch86 telegram-clip-transcode as baseline (GenAI + Telegram clip edit)"
+          git log --oneline -6
+
+      - name: Cherry-pick t1m0thyj cooldown with prepared resolution
+        run: |
+          git fetch origin resolutions/cooldown
+          git remote add t1m https://github.com/t1m0thyj/frigate-notify.git
+          git fetch t1m main
+          set +e
+          git cherry-pick 32ea4fcb0ecb3f5db9eaff07bbfe784245c13a1a
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            echo "cherry-pick conflicted as expected; applying prepared resolution"
+            git checkout origin/resolutions/cooldown -- models/config.go notifier/alerts.go
+            git add models/config.go notifier/alerts.go
+            GIT_EDITOR=true git cherry-pick --continue
+            git commit --amend -m "Add setting for camera notification cooldown" -m "Merge resolution: applied on top of nikosch86 telegram-clip-transcode baseline. Eligible-sender check sits after snapshot fetch (t1m0thyj b950333c), and GenAI updates never consume a cooldown so caption edits are not dropped."
+          fi
+          git log --oneline -6
+
+      - name: Port test-alert bypass and merged tests
+        run: |
+          git checkout origin/resolutions/cooldown -- api/v1/notiftest.go notifier/alerts_test.go
+          git add api/v1/notiftest.go notifier/alerts_test.go
+          git commit -m "cooldown: test alerts bypass cooldown; merge cooldown + delivery tests" -m "Ported from t1m0thyj 481bac40 (SendTestAlert call site) and b950333c (race-fix test). alerts_test.go merges nikosch86 delivery tests with t1m0thyj cooldown tests; b950333c's alerts.go reorder is already in the 32ea4fcb resolution above. 506afdf3 (docs ordering only) intentionally skipped."
+          git log --oneline -8
+
+      - name: Apply merged test adaptation (reviews_test.go)
+        run: |
+          git checkout origin/resolutions/cooldown -- events/reviews_test.go
+          git add events/reviews_test.go
+          git commit -m "test: adapt TestGenAIUpdateFollowsInitialReview to merged cooldown semantics" -m "nikosch86's test disabled the only provider for the initial review and still expected LastNotification to be stamped (niko's stamp-at-entry contract). Under the merged semantics SendAlert only stamps when at least one provider is eligible, so the webhook stays enabled and the initial delivery is drained before the GenAI update is checked."
+          git log --oneline -9
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Format, build and test
+        run: |
+          gofmt -l .
+          gofmt -w models/config.go notifier/alerts.go notifier/alerts_test.go api/v1/notiftest.go events/reviews_test.go
+          # goolm tag: pure-Go libolm (Matrix) — same as the Dockerfile; without it the build needs C libolm headers
+          go build -tags goolm ./...
+          go test -tags goolm ./...
+
+      - name: Push merged main
+        run: git push origin main
