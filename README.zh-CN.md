@@ -45,7 +45,40 @@ Web 控制台（端口 `8000`）：侧边栏工作台，带状态仪表盘、通
 
 你需要：局域网上能访问的 Frigate 0.18.x，以及运行本服务的机器上装好 Docker。GenAI 功能还需要在 Frigate 里配好 [GenAI](https://docs.frigate.video/configuration/genai/)，且 provider 要带 `descriptions` 角色。
 
-Release 都是 prerelease，形式是 Docker 镜像的 `.tar.gz` 包加 `sha256sums.txt`，没有镜像仓库版。最新版是 `v0.1.0`。把两个文件都下载下来，校验通过后加载并运行：
+镜像发布在 GHCR 上。拉取并运行：
+
+```bash
+docker pull ghcr.io/izerok/frigate-notify-plus:v0.1.0
+docker run -d --name frigate-notify-plus --network host \
+  -v /srv/frigate-notify-plus:/data \
+  -e TZ=Asia/Shanghai \
+  ghcr.io/izerok/frigate-notify-plus:v0.1.0
+```
+
+把宿主机目录挂到 `/data`（`/srv/frigate-notify-plus` 换成你自己的路径），并把 `TZ` 设成你的时区——定时总结按容器本地时间跑。
+
+### Docker Compose
+
+保存为 `docker-compose.yml`（仓库里也带了同一份）：
+
+```yaml
+services:
+  frigate-notify-plus:
+    image: ghcr.io/izerok/frigate-notify-plus:v0.1.0
+    container_name: frigate-notify-plus
+    network_mode: host
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - /srv/frigate-notify-plus:/data
+    restart: unless-stopped
+```
+
+然后执行 `docker compose up -d`，接着看下面的[首次运行](#首次运行)。
+
+### 离线 / tar 包安装
+
+Release 里也附带 Docker 镜像的 `.tar.gz` 包和 `sha256sums.txt`，给访问不了镜像仓库的机器用。最新版是 `v0.1.0`。把两个文件都下载下来，校验通过后加载并运行：
 
 ```bash
 curl -LO https://github.com/izerok/frigate-notify-plus/releases/download/v0.1.0/frigate-notify-plus-webui-52e7e9a.tar.gz
@@ -58,7 +91,7 @@ docker run -d --name frigate-notify-plus --network host \
   frigate-notify-plus:webui-52e7e9a
 ```
 
-把宿主机目录挂到 `/data`（`/srv/frigate-notify-plus` 换成你自己的路径），并把 `TZ` 设成你的时区——定时总结按容器本地时间跑。docker-compose 示例和其他安装方式见 [docs/install.md](docs/install.md)。
+更多安装方式见 [docs/install.md](docs/install.md)。
 
 ## 首次运行
 

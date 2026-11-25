@@ -1,11 +1,10 @@
 services:
   frigate-notify-plus:
-    image: ghcr.io/izerok/frigate-notify-plus:latest
-    # Uncomment below if REST API server is enabled
-    # ports:
-    #   - "8000:8000"
+    image: ghcr.io/izerok/frigate-notify-plus:v0.1.0
+    container_name: frigate-notify-plus
+    network_mode: host
     environment:
-      - TZ=Etc/UTC
+      - TZ=Asia/Shanghai
     volumes:
       - /srv/frigate-notify-plus:/data
     restart: unless-stopped

@@ -45,7 +45,40 @@ More screenshots (message templates, setup wizard) are in [docs/screenshots/](do
 
 You need Frigate 0.18.x reachable on your LAN and Docker on the host that will run this app. GenAI features additionally need [Frigate's GenAI](https://docs.frigate.video/configuration/genai/) configured, with a provider that has the `descriptions` role.
 
-Releases are prereleases that ship the Docker image as a `.tar.gz` file alongside `sha256sums.txt` — there is no registry image. The latest release is `v0.1.0`. Download both files, verify the checksum, then load and run the image:
+The image is published on GHCR. Pull and run it:
+
+```bash
+docker pull ghcr.io/izerok/frigate-notify-plus:v0.1.0
+docker run -d --name frigate-notify-plus --network host \
+  -v /srv/frigate-notify-plus:/data \
+  -e TZ=Asia/Shanghai \
+  ghcr.io/izerok/frigate-notify-plus:v0.1.0
+```
+
+Mount a host directory on `/data` (replace `/srv/frigate-notify-plus` with your own path) and set `TZ` to your timezone — scheduled summaries run on container-local time.
+
+### Docker Compose
+
+Save as `docker-compose.yml` (the same file ships in this repo):
+
+```yaml
+services:
+  frigate-notify-plus:
+    image: ghcr.io/izerok/frigate-notify-plus:v0.1.0
+    container_name: frigate-notify-plus
+    network_mode: host
+    environment:
+      - TZ=Asia/Shanghai
+    volumes:
+      - /srv/frigate-notify-plus:/data
+    restart: unless-stopped
+```
+
+Then run `docker compose up -d` and continue with [First run](#first-run) below.
+
+### Offline / tarball install
+
+Releases also ship the Docker image as a `.tar.gz` file alongside `sha256sums.txt`, for hosts without registry access. The latest release is `v0.1.0`. Download both files, verify the checksum, then load and run the image:
 
 ```bash
 curl -LO https://github.com/izerok/frigate-notify-plus/releases/download/v0.1.0/frigate-notify-plus-webui-52e7e9a.tar.gz
@@ -58,7 +91,7 @@ docker run -d --name frigate-notify-plus --network host \
   frigate-notify-plus:webui-52e7e9a
 ```
 
-Mount a host directory on `/data` (replace `/srv/frigate-notify-plus` with your own path) and set `TZ` to your timezone — scheduled summaries run on container-local time. A docker-compose example and other install options are in [docs/install.md](docs/install.md).
+More install options are in [docs/install.md](docs/install.md).
 
 ## First run
 
