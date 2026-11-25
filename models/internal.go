@@ -1,6 +1,18 @@
 package models
 
-import "time"
+import (
+	"sync"
+	"time"
+)
+
+// notifStatusMu serializes NotifierStatus updates. Provider sends run
+// concurrently — alerts, the idle summary, manual runs and scheduled
+// digests can all be in flight to the same profile at once — and the
+// counters below are plain fields, so without the lock concurrent
+// NotifSuccess/NotifFailure calls lose increments and tear the status
+// fields. The lock is package-level (not a struct field) so
+// NotifierStatus values stay freely copyable for status reporting.
+var notifStatusMu sync.Mutex
 
 // Store internal-use only info
 type InternalConfig struct {
@@ -53,18 +65,24 @@ type NotifierStatus struct {
 }
 
 func (n *NotifierStatus) InitNotifStatus(id int, enabled bool) {
+	notifStatusMu.Lock()
+	defer notifStatusMu.Unlock()
 	n.ID = id
 	n.Enabled = enabled
 	n.Status = "configured, not used yet"
 }
 
 func (n *NotifierStatus) NotifSuccess() {
+	notifStatusMu.Lock()
+	defer notifStatusMu.Unlock()
 	n.LastSuccess = time.Now()
 	n.Sent += 1
 	n.Status = "ok"
 }
 
 func (n *NotifierStatus) NotifFailure(message string) {
+	notifStatusMu.Lock()
+	defer notifStatusMu.Unlock()
 	n.LastFailure = time.Now()
 	n.LastError = message
 	n.Failed += 1

@@ -106,12 +106,25 @@ func onSummaryIdle() {
 	sendSummaryNotification(summary, startTime)
 }
 
-// activityHasConcerns mirrors Frigate's summarize predicate: only review
-// segments whose GenAI metadata flags a threat or other concerns reach the
-// LLM; without any, Frigate returns a canned placeholder instead of a summary.
-func activityHasConcerns(start, end time.Time) (bool, error) {
-	// Without limit or reviewed params Frigate returns every segment in the
-	// window, like summarize considers them
+// windowReview is one review segment from the Frigate review API. Frigate
+// keeps GenAI output that fails validation, so the concern fields are not
+// guaranteed to be well-typed and are read as any.
+type windowReview struct {
+	Camera    string  `json:"camera"`
+	StartTime float64 `json:"start_time"`
+	Data      struct {
+		Metadata *struct {
+			Title                string `json:"title"`
+			ShortSummary         string `json:"shortSummary"`
+			PotentialThreatLevel any    `json:"potential_threat_level"`
+			OtherConcerns        any    `json:"other_concerns"`
+		} `json:"metadata"`
+	} `json:"data"`
+}
+
+// windowReviews returns every review segment in the window. Without limit or
+// reviewed params Frigate returns every segment, like summarize considers them.
+func windowReviews(start, end time.Time) ([]windowReview, error) {
 	url := fmt.Sprintf("%s/api/review?after=%d&before=%d",
 		config.ConfigData.Frigate.Server,
 		start.Unix(),
@@ -120,44 +133,53 @@ func activityHasConcerns(start, end time.Time) (bool, error) {
 
 	response, err := util.HTTPGet(url, config.ConfigData.Frigate.Insecure, "", config.ConfigData.Frigate.Headers...)
 	if err != nil {
-		return false, fmt.Errorf("review API request failed: %w", err)
+		return nil, fmt.Errorf("review API request failed: %w", err)
 	}
 
-	// Frigate keeps GenAI output that fails validation, so metadata fields are
-	// not guaranteed to be well-typed
-	var reviews []struct {
-		Data struct {
-			Metadata *struct {
-				PotentialThreatLevel any `json:"potential_threat_level"`
-				OtherConcerns        any `json:"other_concerns"`
-			} `json:"metadata"`
-		} `json:"data"`
-	}
+	var reviews []windowReview
 	if err := json.Unmarshal(response, &reviews); err != nil {
-		return false, fmt.Errorf("failed to parse review response: %w", err)
+		return nil, fmt.Errorf("failed to parse review response: %w", err)
 	}
+	return reviews, nil
+}
 
+// reviewsHaveConcerns reports whether any segment's GenAI metadata flags a
+// threat or other concerns, mirroring Frigate's summarize predicate: only
+// such segments reach the LLM; without any, Frigate returns a canned
+// placeholder instead of a summary.
+func reviewsHaveConcerns(reviews []windowReview) bool {
 	for _, review := range reviews {
 		meta := review.Data.Metadata
 		if meta == nil {
 			continue
 		}
 		if level, ok := meta.PotentialThreatLevel.(float64); ok && level > 0 {
-			return true, nil
+			return true
 		}
 		// Frigate tests other_concerns for Python truthiness
 		switch concerns := meta.OtherConcerns.(type) {
 		case []any:
 			if len(concerns) > 0 {
-				return true, nil
+				return true
 			}
 		case string:
 			if concerns != "" {
-				return true, nil
+				return true
 			}
 		}
 	}
-	return false, nil
+	return false
+}
+
+// activityHasConcerns mirrors Frigate's summarize predicate: only review
+// segments whose GenAI metadata flags a threat or other concerns reach the
+// LLM; without any, Frigate returns a canned placeholder instead of a summary.
+func activityHasConcerns(start, end time.Time) (bool, error) {
+	reviews, err := windowReviews(start, end)
+	if err != nil {
+		return false, err
+	}
+	return reviewsHaveConcerns(reviews), nil
 }
 
 func requestFrigateSummary(start, end time.Time) (string, error) {
@@ -208,7 +230,7 @@ func sendSummaryNotification(summary string, activityStart time.Time) {
 // it naturally.
 func summaryEvent(summary string, windowStart time.Time) models.Event {
 	var event models.Event
-	event.Extra.GenAITitle = "Activity Summary"
+	event.Extra.GenAITitle = "活动摘要"
 	event.Extra.GenAISummary = summary
 	event.Extra.CameraName = "All Cameras"
 	event.Extra.FormattedTime = windowStart.String()

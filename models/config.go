@@ -174,6 +174,7 @@ type GenAISchedule struct {
 	Enabled *bool           `koanf:"enabled" yaml:"enabled,omitempty" json:"enabled,omitempty" doc:"Enable this scheduled summary" default:"true"`
 	Time    string          `koanf:"time" yaml:"time,omitempty" json:"time,omitempty" doc:"Local time (HH:MM) to run the summary" example:"20:00"`
 	Window  string          `koanf:"window" yaml:"window,omitempty" json:"window,omitempty" doc:"Time window to summarize: 'today' (midnight to run time) or 'last_Nh' (N hours back)" example:"today"`
+	Prompt  string          `koanf:"prompt" yaml:"prompt,omitempty" json:"prompt,omitempty" doc:"Prompt sent to Frigate's GenAI chat for this schedule; empty uses the default 'what happened in this window' prompt"`
 	Targets []RoutingTarget `koanf:"targets" yaml:"targets,omitempty" json:"targets,omitempty" doc:"Provider profiles that receive the scheduled summary; empty sends to every enabled provider"`
 }
 
