@@ -1,5 +1,12 @@
 # Changelog
 
+## [v0.1.1](https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.1) - Nov 26 2026
+ - Add a chat digest for scheduled GenAI summaries: Frigate's chat endpoint composes the window's events into one chronological digest, each schedule can carry a custom prompt, and a fallback ladder (chat -> summarize when the window has concerns -> per-event list -> "no activity" line) makes sure a digest is always delivered
+ - Fix chat requests bypassing the shared Frigate HTTP contract: they now go through `util.HTTPPostFrigate` with the login session and `ignoressl` support, so digests work when Frigate authentication is enabled or Frigate serves a self-signed HTTPS certificate
+ - Fix a slow summary run swallowing a neighbouring schedule for the whole day: due schedules are now marked fired at dispatch and each runs in its own goroutine
+ - Fix Frigate's canned "maximum tool call iterations" reply being delivered as the digest: a chat response with `finish_reason=length` is now treated as a failure and falls back
+ - Fix a race in the notification status counters when sends run concurrently (counters now guarded by a mutex)
+
 ## [v0.1.0](https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.0) - Nov 25 2026
  - First release on this fork's own version line: Frigate Notify Plus no longer follows upstream frigate-notify versioning — the `v0.5.4-webui.*` prerelease series ends at `v0.5.4-webui.15`, and the app now reports itself as `v0.1.0`
  - Redesign the Web UI console: sidebar shell with a resident status summary, hash-based deep links (`#/status`, `#/config/<section>`, ...), a status dashboard, a floating save dock with change count and save-diff preview, and a tabbed template editor
