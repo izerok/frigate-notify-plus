@@ -277,6 +277,12 @@
     <div class="crumbs"><a href="index.html">Docs</a><span class="sep">/</span><span class="here">Changelog</span></div>
     <article class="article">
 <h1 id="changelog">Changelog</h1>
+<h2 id="v012-nov-26-2026"><a href="https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.2">v0.1.2</a> - Nov 26 2026</h2>
+<ul>
+<li>Add outbound proxy support for notification delivery: a global <code>alerts.general.proxy</code> (<code>url</code> + <code>no_proxy</code>) applies to every notification channel and the monitor check-in, and each provider profile accepts its own <code>proxy</code> override — empty follows the global proxy, <code>direct</code> forces a direct connection, or a proxy URL of its own (<code>http://</code>, <code>https://</code>, <code>socks5://</code> or <code>socks5h://</code>, optionally with credentials)</li>
+<li>The Frigate server itself is never proxied: its host is always on the bypass list, the <code>no_proxy</code> list also covers SMTP deliveries, and Frigate-bound requests keep following the Frigate HTTP contract</li>
+<li>No silent fallback: when the proxy is unreachable the delivery fails and the error names the proxy; proxy credentials are masked in logs, validation errors and the Web UI save-diff preview</li>
+</ul>
 <h2 id="v011-nov-26-2026"><a href="https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.1">v0.1.1</a> - Nov 26 2026</h2>
 <ul>
 <li>Add a chat digest for scheduled GenAI summaries: Frigate's chat endpoint composes the window's events into one chronological digest, each schedule can carry a custom prompt, and a fallback ladder (chat -&gt; summarize when the window has concerns -&gt; per-event list -&gt; "no activity" line) makes sure a digest is always delivered</li>
@@ -310,7 +316,7 @@
     </article>
     <div class="prevnext"><a class="pn-card prev" href="api.html"><span class="pn-cap">&larr; Previous</span><span class="pn-name">API</span></a><span></span></div>
   </main>
-  <aside class="toc"><div class="toc-box"><div class="toc-title">On this page</div><a class="lvl2" href="#v011-nov-26-2026">v0.1.1 - Nov 26 2026</a><a class="lvl2" href="#v010-nov-25-2026">v0.1.0 - Nov 25 2026</a></div></aside>
+  <aside class="toc"><div class="toc-box"><div class="toc-title">On this page</div><a class="lvl2" href="#v012-nov-26-2026">v0.1.2 - Nov 26 2026</a><a class="lvl2" href="#v011-nov-26-2026">v0.1.1 - Nov 26 2026</a><a class="lvl2" href="#v010-nov-25-2026">v0.1.0 - Nov 25 2026</a></div></aside>
 </div>
 
 <footer>

@@ -277,6 +277,12 @@
     <div class="crumbs"><a href="index.html">文档</a><span class="sep">/</span><span class="here">更新日志</span></div>
     <article class="article">
 <h1 id="changelog">更新日志</h1>
+<h2 id="v012-nov-26-2026"><a href="https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.2">v0.1.2</a> - 2026 年 11 月 26 日</h2>
+<ul>
+<li>新增通知投递的出站代理支持：全局 <code>alerts.general.proxy</code>（<code>url</code> + <code>no_proxy</code>）作用于所有通知渠道和监控探活，每个服务商档案也可设置自己的 <code>proxy</code> 覆盖项——留空跟随全局代理，<code>direct</code> 强制直连，或填该档案自己的代理地址（<code>http://</code>、<code>https://</code>、<code>socks5://</code> 或 <code>socks5h://</code>，可带凭据）</li>
+<li>Frigate 服务器本身永不走代理：其主机始终位于绕过名单中，<code>no_proxy</code> 名单同样覆盖 SMTP 投递，发往 Frigate 的请求继续遵循 Frigate HTTP 约定</li>
+<li>不静默回退：代理不可达时投递直接失败，错误信息会点名该代理；代理凭据在日志、校验错误和 Web UI 保存差异预览中均会打码</li>
+</ul>
 <h2 id="v011-nov-26-2026"><a href="https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.1">v0.1.1</a> - 2026 年 11 月 26 日</h2>
 <ul>
 <li>为定时 GenAI 总结新增聊天摘要：Frigate 的 chat 接口把窗口内的事件编排成一份按时间顺序排列的摘要，每个定时计划可携带自定义提示词，并有一套回退阶梯（chat -&gt; 窗口内有被标记事项时改用 summarize -&gt; 逐事件列表 -&gt; “无活动”一行）确保摘要一定能送达</li>
@@ -310,7 +316,7 @@
     </article>
     <div class="prevnext"><a class="pn-card prev" href="api.html"><span class="pn-cap">&larr; 上一页</span><span class="pn-name">API</span></a><span></span></div>
   </main>
-  <aside class="toc"><div class="toc-box"><div class="toc-title">本页目录</div><a class="lvl2" href="#v011-nov-26-2026">v0.1.1 - 2026 年 11 月 26 日</a><a class="lvl2" href="#v010-nov-25-2026">v0.1.0 - 2026 年 11 月 25 日</a></div></aside>
+  <aside class="toc"><div class="toc-box"><div class="toc-title">本页目录</div><a class="lvl2" href="#v012-nov-26-2026">v0.1.2 - 2026 年 11 月 26 日</a><a class="lvl2" href="#v011-nov-26-2026">v0.1.1 - 2026 年 11 月 26 日</a><a class="lvl2" href="#v010-nov-25-2026">v0.1.0 - 2026 年 11 月 25 日</a></div></aside>
 </div>
 
 <footer>

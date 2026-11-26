@@ -369,15 +369,15 @@
         <button class="tab" data-tab="compose" type="button">Docker Compose</button>
       </div>
       <pre id="code-docker"><code data-i18n-html="codeDocker"><span class="cm"># Pull the image from GHCR and run it next to Frigate</span>
-docker pull <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+docker pull <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
 docker run -d --name frigate-notify-plus --network host \
   -v /srv/frigate-notify-plus:/data \
   -e TZ=Asia/Shanghai \
-  ghcr.io/izerok/frigate-notify-plus:v0.1.1</code></pre>
+  ghcr.io/izerok/frigate-notify-plus:v0.1.2</code></pre>
       <pre id="code-compose" hidden><code data-i18n-html="codeCompose"><span class="cm"># docker-compose.yml — the same file ships in the repo</span>
 services:
   frigate-notify-plus:
-    image: <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+    image: <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
     container_name: frigate-notify-plus
     network_mode: host
     environment:
@@ -469,15 +469,15 @@ services:
       instH2: "Up in two minutes",
       instP: 'You need Frigate 0.18.x reachable on your LAN and Docker on the host. GenAI features additionally need Frigate’s GenAI configured, with a provider that has the <em>descriptions</em> role.',
       codeDocker: String.raw`<span class="cm"># Pull the image from GHCR and run it next to Frigate</span>
-docker pull <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+docker pull <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
 docker run -d --name frigate-notify-plus --network host \
   -v /srv/frigate-notify-plus:/data \
   -e TZ=Asia/Shanghai \
-  ghcr.io/izerok/frigate-notify-plus:v0.1.1`,
+  ghcr.io/izerok/frigate-notify-plus:v0.1.2`,
       codeCompose: String.raw`<span class="cm"># docker-compose.yml — the same file ships in the repo</span>
 services:
   frigate-notify-plus:
-    image: <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+    image: <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
     container_name: frigate-notify-plus
     network_mode: host
     environment:
@@ -532,15 +532,15 @@ services:
       instH2: "两分钟跑起来",
       instP: '你需要局域网内可达的 Frigate 0.18.x，以及一台装了 Docker 的主机。GenAI 功能还需要 Frigate 已配置好 GenAI，且服务商带有 <em>descriptions</em> 角色。',
       codeDocker: String.raw`<span class="cm"># 从 GHCR 拉取镜像，在 Frigate 旁边运行</span>
-docker pull <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+docker pull <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
 docker run -d --name frigate-notify-plus --network host \
   -v /srv/frigate-notify-plus:/data \
   -e TZ=Asia/Shanghai \
-  ghcr.io/izerok/frigate-notify-plus:v0.1.1`,
+  ghcr.io/izerok/frigate-notify-plus:v0.1.2`,
       codeCompose: String.raw`<span class="cm"># docker-compose.yml —— 仓库中附带同一份文件</span>
 services:
   frigate-notify-plus:
-    image: <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+    image: <span class="hl">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
     container_name: frigate-notify-plus
     network_mode: host
     environment:

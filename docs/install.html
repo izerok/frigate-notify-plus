@@ -281,17 +281,17 @@
 <p>Most configuration can also be done through the built-in Web UI console — see <a href="#first-run">First run</a> below.</p>
 <h2 id="docker-recommended">Docker (Recommended)</h2>
 <p>The image is published on the GitHub Container Registry (GHCR). Pull it and run it with the host network so it can reach Frigate and MQTT on the LAN:</p>
-<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/izerok/frigate-notify-plus:v0.1.1
+<div class="highlight"><pre><span></span><code>docker<span class="w"> </span>pull<span class="w"> </span>ghcr.io/izerok/frigate-notify-plus:v0.1.2
 docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </span>--name<span class="w"> </span>frigate-notify-plus<span class="w"> </span>--network<span class="w"> </span>host<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-v<span class="w"> </span>/srv/frigate-notify-plus:/data<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>-e<span class="w"> </span><span class="nv">TZ</span><span class="o">=</span>Asia/Shanghai<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>ghcr.io/izerok/frigate-notify-plus:v0.1.1
+<span class="w">  </span>ghcr.io/izerok/frigate-notify-plus:v0.1.2
 </code></pre></div>
 <p>Mount a host directory on <code>/data</code> (replace <code>/srv/frigate-notify-plus</code> with your path). The data directory holds <code>config.yml</code>, <code>logs/</code>, and <code>mute.json</code>, so the config and logs survive container recreation — deleting the container does not delete the data. No <code>config.yml</code> file mount is needed.</p>
 <p>Or with compose:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frigate-notify-plus</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
 <span class="w">    </span><span class="nt">container_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate-notify-plus</span>
 <span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
@@ -306,11 +306,11 @@ docker<span class="w"> </span>run<span class="w"> </span>-d<span class="w"> </sp
 sha256sum<span class="w"> </span>-c<span class="w"> </span>sha256sums.txt
 docker<span class="w"> </span>load<span class="w"> </span>-i<span class="w"> </span>&lt;tar.gz&gt;
 </code></pre></div>
-<p>The image inside the tar is tagged <code>frigate-notify-plus:webui-&lt;short-sha&gt;</code> (for example <code>frigate-notify-plus:webui-de04124</code>). Run it the same way as above, using that local image tag.</p>
+<p>The image inside the tar is tagged <code>frigate-notify-plus:webui-&lt;short-sha&gt;</code> (for example <code>frigate-notify-plus:webui-c13eaec</code>). Run it the same way as above, using that local image tag.</p>
 <p>The data directory can be changed with the <code>FN_DATA_DIR</code> environment variable (or the <code>-d</code> flag), and the config file location can still be overridden with the <code>FN_CONFIGFILE</code> environment variable (or the <code>-c</code> flag) — for example, to keep using a single mounted config file:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frigate-notify-plus</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
 <span class="w">    </span><span class="nt">network_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">host</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">FN_CONFIGFILE</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/app/config/config.yml</span>
@@ -326,7 +326,7 @@ docker<span class="w"> </span>load<span class="w"> </span>-i<span class="w"> </s
 <p>For docker secrets, configure your secret - then point the appropriate environment variable to your secret file. For example, if you had a secret named <code>mqtt_password</code> and wanted to provide that to frigate-notify-plus:</p>
 <div class="highlight"><pre><span></span><code><span class="nt">services</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">frigate-notify-plus</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/izerok/frigate-notify-plus:v0.1.1</span>
+<span class="w">    </span><span class="nt">image</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ghcr.io/izerok/frigate-notify-plus:v0.1.2</span>
 <span class="w">    </span><span class="nt">environment</span><span class="p">:</span>
 <span class="w">      </span><span class="nt">FN_FRIGATE__MQTT__PASSWORD</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">/run/secrets/mqtt_password</span>
 </code></pre></div>
