@@ -21,10 +21,16 @@ jobs:
           docker run -d --name mosquitto --network host eclipse-mosquitto:2
           python3 test/verify/mock_frigate.py &
           python3 test/verify/webhook_catcher.py &
+          echo "127.0.0.1 webhook-catcher" | sudo tee -a /etc/hosts
+          python3 test/verify/tiny_proxy.py &
           for i in $(seq 1 20); do
             curl -fsS http://127.0.0.1:18080/api/version && break || sleep 1
           done
           curl -fsS http://127.0.0.1:18080/api/version
+          for i in $(seq 1 20); do
+            (exec 3<>/dev/tcp/127.0.0.1/18082) 2>/dev/null && break || sleep 1
+          done
+          (exec 3<>/dev/tcp/127.0.0.1/18082) 2>/dev/null || { echo "tiny proxy did not start"; exit 1; }
 
       - name: Run container (configured mode, data-dir mount)
         run: |

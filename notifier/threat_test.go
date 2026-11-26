@@ -12,7 +12,6 @@ import (
 	"testing/fstest"
 
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
-	"github.com/gregdel/pushover"
 	"github.com/izerok/frigate-notify-plus/config"
 	"github.com/izerok/frigate-notify-plus/models"
 )
@@ -159,25 +158,21 @@ func TestSendGotifyThreatPriority(t *testing.T) {
 func TestSendPushoverThreatPriority(t *testing.T) {
 	setupThreatTemplates(t)
 
-	// The pushover client posts to a package-level endpoint; point it at a
-	// mock server that records the form-encoded priority. The client
-	// requires the X-Limit-App-* rate-limit headers on the response.
+	// The pushover sender posts to a package-level endpoint; point it at
+	// a mock server that records the form-encoded priority.
 	var gotPriority string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, _ := io.ReadAll(r.Body)
 		values, _ := url.ParseQuery(string(body))
 		gotPriority = values.Get("priority")
 		w.Header().Set("Content-Type", "application/json")
-		w.Header().Set("X-Limit-App-Limit", "7500")
-		w.Header().Set("X-Limit-App-Remaining", "7499")
-		w.Header().Set("X-Limit-App-Reset", "1893456000")
 		io.WriteString(w, `{"status":1,"request":"req-1"}`)
 	}))
 	defer srv.Close()
 
-	origEndpoint := pushover.APIEndpoint
-	pushover.APIEndpoint = srv.URL
-	t.Cleanup(func() { pushover.APIEndpoint = origEndpoint })
+	origEndpoint := pushoverAPIEndpoint
+	pushoverAPIEndpoint = srv.URL
+	t.Cleanup(func() { pushoverAPIEndpoint = origEndpoint })
 
 	origConfig := config.ConfigData
 	origStatus := config.Internal.Status.Notifications.Pushover
@@ -233,8 +228,8 @@ func TestSendTelegramSilentOnlyWithGenAI(t *testing.T) {
 	defer tg.Close()
 
 	origNewBot := newTelegramBot
-	newTelegramBot = func(token string) (*tgbotapi.BotAPI, error) {
-		return tgbotapi.NewBotAPIWithAPIEndpoint(token, tg.URL+"/bot%s/%s")
+	newTelegramBot = func(profile models.Telegram) (*tgbotapi.BotAPI, error) {
+		return tgbotapi.NewBotAPIWithAPIEndpoint(profile.Token, tg.URL+"/bot%s/%s")
 	}
 	t.Cleanup(func() { newTelegramBot = origNewBot })
 

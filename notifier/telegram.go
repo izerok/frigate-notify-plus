@@ -14,6 +14,7 @@ import (
 	tgbotapi "github.com/OvyFlash/telegram-bot-api"
 	"github.com/izerok/frigate-notify-plus/config"
 	"github.com/izerok/frigate-notify-plus/models"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 // telegramDefaultClipMaxSizeMB matches Telegram's cloud Bot API upload limit and
@@ -24,9 +25,17 @@ const telegramDefaultClipMaxSizeMB = 50
 // ("0-1024 characters after entities parsing").
 const telegramCaptionMaxChars = 1024
 
-// newTelegramBot constructs the Telegram bot client. It is a package-level seam
-// so tests can point the bot at a mock Bot API server instead of api.telegram.org.
-var newTelegramBot = tgbotapi.NewBotAPI
+// newTelegramBot constructs the Telegram bot client for one profile. It
+// is a package-level seam so tests can point the bot at a mock Bot API
+// server instead of api.telegram.org. When a proxy applies to the
+// profile, the bot is built with a proxy-aware HTTP client; otherwise
+// the plain constructor is used, exactly as before.
+var newTelegramBot = func(profile models.Telegram) (*tgbotapi.BotAPI, error) {
+	if proxyx.Configured(profile.Proxy) {
+		return tgbotapi.NewBotAPIWithClient(profile.Token, tgbotapi.APIEndpoint, proxyx.Client(profile.Proxy, 0, false))
+	}
+	return tgbotapi.NewBotAPI(profile.Token)
+}
 
 // telegramClipMaxBytes returns the configured clip size limit in bytes, falling
 // back to the default when the profile leaves clip_max_size unset (<= 0).
@@ -93,7 +102,7 @@ func SendTelegramMessage(event models.Event, snapshot io.Reader, provider notifM
 		}
 	}
 
-	bot, err := newTelegramBot(profile.Token)
+	bot, err := newTelegramBot(profile)
 	if err != nil {
 		log.Warn().
 			Str("event_id", event.ID).

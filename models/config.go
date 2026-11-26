@@ -138,6 +138,15 @@ type General struct {
 	AudioOnly               string         `koanf:"audio_only" yaml:"audio_only,omitempty" json:"audio_only,omitempty" enum:"allow,drop" doc:"Allow/Drop events that only contain audio detections" default:"allow"`
 	GenAI                   GenAIConfig    `koanf:"genai" yaml:"genai,omitempty" json:"genai,omitempty" doc:"GenAI feature settings"`
 	ThreatPriority          ThreatPriority `koanf:"threat_priority" yaml:"threat_priority,omitempty" json:"threat_priority,omitempty" doc:"Per-threat-level notification priority per provider"`
+	Proxy                   Proxy          `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Outbound proxy for notification delivery"`
+}
+
+// Proxy configures the outbound proxy used when delivering notifications.
+// It applies to notification traffic (and the monitor check-in) only;
+// connections to the Frigate server itself are never proxied.
+type Proxy struct {
+	URL     string   `koanf:"url" yaml:"url,omitempty" json:"url,omitempty" doc:"Proxy URL for outbound notifications: http://, https://, socks5:// or socks5h://, optionally with user:password@ credentials. Empty disables the proxy."`
+	NoProxy []string `koanf:"no_proxy" yaml:"no_proxy,omitempty" json:"no_proxy,omitempty" doc:"Hosts that must never be proxied: hostnames, domain suffixes, CIDRs, or localhost. The Frigate server is always bypassed."`
 }
 
 // ThreatPriority maps the GenAI threat level of an event (Normal,
@@ -224,6 +233,7 @@ type AppriseAPI struct {
 	Tags        []string `koanf:"tags" yaml:"tags,omitempty" json:"tags,omitempty" doc:"Notification group tags to receive alert"`
 	URLs        []string `koanf:"urls" yaml:"urls,omitempty" json:"urls,omitempty" doc:"Apprise notification URLs to send alerts to"`
 	Insecure    bool     `koanf:"ignoressl" yaml:"ignoressl,omitempty" json:"ignoressl,omitempty" doc:"Ignore TLS/SSL errors" default:"false"`
+	Proxy       string   `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 // Bark sends iOS push notifications via a Bark server (bark.day). The
@@ -239,12 +249,14 @@ type Bark struct {
 	URL         string `koanf:"url" yaml:"url,omitempty" json:"url,omitempty" doc:"URL opened when the Bark notification is tapped"`
 	Group       string `koanf:"group" yaml:"group,omitempty" json:"group,omitempty" doc:"Bark notification group"`
 	Level       string `koanf:"level" yaml:"level,omitempty" json:"level,omitempty" enum:"active,timeSensitive,passive" doc:"Bark notification level (active, timeSensitive, passive); empty sends the server default"`
+	Proxy       string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Discord struct {
 	AlertCommon  `koanf:",squash" yaml:",inline"`
 	Webhook      string `koanf:"webhook" yaml:"webhook,omitempty" json:"webhook,omitempty" doc:"Discord webhook URL to send alerts" default:""`
 	DisableEmbed bool   `koanf:"disable_embed" yaml:"disable_embed,omitempty" json:"disable_embed,omitempty" doc:"Disable sending notification as Discord embedded message"`
+	Proxy        string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Gotify struct {
@@ -253,6 +265,7 @@ type Gotify struct {
 	Token       string `koanf:"token" yaml:"token,omitempty" json:"token,omitempty" doc:"Gotify app token" default:""`
 	Insecure    bool   `koanf:"ignoressl" yaml:"ignoressl,omitempty" json:"ignoressl,omitempty" doc:"Ignore TLS/SSL errors" default:"false"`
 	Priority    int    `koanf:"priority" yaml:"priority,omitempty" json:"priority,omitempty" minimum:"0" maximum:"10" doc:"Gotify message priority" default:"0"`
+	Proxy       string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Matrix struct {
@@ -262,6 +275,7 @@ type Matrix struct {
 	Password    string `koanf:"password" yaml:"password,omitempty" json:"password,omitempty" doc:"Matrix password" default:""`
 	RoomID      string `koanf:"roomid" yaml:"roomid,omitempty" json:"roomid,omitempty" doc:"Room ID to send notifications to" default:""`
 	Insecure    bool   `koanf:"ignoressl" yaml:"ignoressl,omitempty" json:"ignoressl,omitempty" doc:"Ignore TLS/SSL errors" default:"false"`
+	Proxy       string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Mattermost struct {
@@ -272,6 +286,7 @@ type Mattermost struct {
 	Username    string              `koanf:"username" yaml:"username,omitempty" json:"username,omitempty" doc:"Override Mattermost username for messages"`
 	Insecure    bool                `koanf:"ignoressl" yaml:"ignoressl,omitempty" json:"ignoressl,omitempty" doc:"Ignore TLS/SSL errors" default:"false"`
 	Headers     []map[string]string `koanf:"headers" yaml:"headers,omitempty" json:"headers,omitempty" doc:"HTTP headers to include with Mattermost notifications"`
+	Proxy       string              `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Ntfy struct {
@@ -280,6 +295,7 @@ type Ntfy struct {
 	Topic       string              `koanf:"topic" yaml:"topic,omitempty" json:"topic,omitempty" doc:"Ntfy topic" default:""`
 	Insecure    bool                `koanf:"ignoressl" yaml:"ignoressl,omitempty" json:"ignoressl,omitempty" doc:"Ignore TLS/SSL errors" default:"false"`
 	Headers     []map[string]string `koanf:"headers" yaml:"headers,omitempty" json:"headers,omitempty" doc:"HTTP headers to include with Ntfy notifications"`
+	Proxy       string              `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Pushover struct {
@@ -292,6 +308,7 @@ type Pushover struct {
 	Retry       int    `koanf:"retry" yaml:"retry,omitempty" json:"retry,omitempty" doc:"Retry interval for emergency notifications (Priority 2)" default:"0"`
 	Expire      int    `koanf:"expire" yaml:"expire,omitempty" json:"expire,omitempty" doc:"Expiration timer for emergency notifications (Priority 2)" default:"0"`
 	TTL         int    `koanf:"ttl" yaml:"ttl,omitempty" json:"ttl,omitempty" doc:"Time to Live for notification messages" default:"0"`
+	Proxy       string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Signal struct {
@@ -300,6 +317,7 @@ type Signal struct {
 	Account     string   `koanf:"account" yaml:"account,omitempty" json:"account,omitempty" doc:"Number of account used to send messages" default:""`
 	Recipients  []string `koanf:"recipients" yaml:"recipients,omitempty" json:"recipients,omitempty" doc:"List of recipients to receive messages"`
 	Insecure    bool     `koanf:"ignoressl" yaml:"ignoressl,omitempty" enum:"true,false" json:"ignoressl,omitempty" default:"false"`
+	Proxy       string   `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type SMTP struct {
@@ -315,6 +333,7 @@ type SMTP struct {
 	Thread      string `koanf:"thread" yaml:"thread" json:"thread" enum:"day,camera" doc:"Specify method of email threading" default:"day"`
 	Insecure    bool   `koanf:"ignoressl" yaml:"ignoressl,omitempty" enum:"true,false" json:"ignoressl,omitempty" default:"false"`
 	MsgUUID     bool   `koanf:"msguuid" yaml:"msguuid,omitempty" json:"msguuid,omitempty" enum:"true,false" doc:"Generate message-id from uuid" default:"false"`
+	Proxy       string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Telegram struct {
@@ -330,6 +349,7 @@ type Telegram struct {
 	ClipTranscodeBitrate     int    `koanf:"clip_transcode_bitrate" yaml:"clip_transcode_bitrate,omitempty" json:"clip_transcode_bitrate,omitempty" doc:"Maximum video bitrate (kbit/s) of the transcoded clip" default:"1000"`
 	ClipTranscodeTimeout     int    `koanf:"clip_transcode_timeout" yaml:"clip_transcode_timeout,omitempty" json:"clip_transcode_timeout,omitempty" doc:"Seconds to wait for ffmpeg before giving up on the clip" default:"120"`
 	ClipTranscodeVAAPIDevice string `koanf:"clip_transcode_vaapi_device" yaml:"clip_transcode_vaapi_device,omitempty" json:"clip_transcode_vaapi_device,omitempty" doc:"VAAPI render device (e.g. /dev/dri/renderD128) to transcode on the GPU, falling back to software if it fails" default:""`
+	Proxy                    string `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 type Webhook struct {
@@ -340,6 +360,7 @@ type Webhook struct {
 	Params      []map[string]string `fix:"params" json:"params,omitempty" yaml:"params,omitempty" doc:"URL parameters for webhook notifications"`
 	Headers     []map[string]string `koanf:"headers" yaml:"headers,omitempty" json:"headers,omitempty" doc:"HTTP headers for webhook notifications"`
 	Template    interface{}         `koanf:"template" yaml:"template,omitempty" json:"template,omitempty" doc:"Custom message template"`
+	Proxy       string              `koanf:"proxy" yaml:"proxy,omitempty" json:"proxy,omitempty" doc:"Per-profile proxy override: empty follows alerts.general.proxy, 'direct' forces a direct connection, or a proxy URL of its own."`
 }
 
 // webhookYAML is the YAML shape of a webhook profile. yaml.v3 panics on the
@@ -358,6 +379,7 @@ type webhookYAML struct {
 	Params   []map[string]string `yaml:"params,omitempty"`
 	Headers  []map[string]string `yaml:"headers,omitempty"`
 	Template interface{}         `yaml:"template,omitempty"`
+	Proxy    string              `yaml:"proxy,omitempty"`
 }
 
 // MarshalYAML renders a webhook profile through webhookYAML.
@@ -372,6 +394,7 @@ func (w Webhook) MarshalYAML() (interface{}, error) {
 		Params:   w.Params,
 		Headers:  w.Headers,
 		Template: w.Template,
+		Proxy:    w.Proxy,
 	}, nil
 }
 
@@ -390,6 +413,7 @@ func (w *Webhook) UnmarshalYAML(value *yaml.Node) error {
 	w.Params = aux.Params
 	w.Headers = aux.Headers
 	w.Template = aux.Template
+	w.Proxy = aux.Proxy
 	return nil
 }
 

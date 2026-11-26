@@ -82,7 +82,7 @@ func SendGotifyPush(event models.Event, provider notifMeta) {
 	gotifyURL := fmt.Sprintf("%s/message?token=%s&", profile.Server, profile.Token)
 
 	header := map[string]string{"Content-Type": "application/json"}
-	response, err := util.HTTPPost(gotifyURL, profile.Insecure, data, "", header)
+	response, err := util.HTTPPostProxied(gotifyURL, profile.Insecure, profile.Proxy, data, "", header)
 	if err != nil {
 		log.Warn().
 			Str("event_id", event.ID).

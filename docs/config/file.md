@@ -294,6 +294,20 @@ All alert providers (Discord, Gotify, etc) also support optional filters & the a
         - **enabled** (Optional - Default: `true`) - Set to `false` to disable a schedule without removing it
         - Each schedule can also be run on demand from the Web UI (status page, "立即执行")
 
+- **proxy** (Optional)
+    - Outbound proxy used when delivering notifications. It applies to notification traffic (and the monitor check-in) only; connections to the Frigate server itself are never proxied.
+    - **url** (Optional)
+        - Env: `FN_ALERTS__GENERAL__PROXY__URL`
+        - Proxy address: `http://`, `https://`, `socks5://` or `socks5h://`, optionally with `user:password@` credentials, for example `http://192.168.1.10:7890`
+        - Leave empty to deliver notifications without a proxy (the behaviour of previous versions)
+    - **no_proxy** (Optional)
+        - Env example: `FN_ALERTS__GENERAL__PROXY__NO_PROXY=192.168.0.0/16,localhost`
+        - Hosts that must never be proxied: hostnames, domain suffixes, CIDRs, or `localhost`
+        - The Frigate server host is always bypassed automatically, even if it is not listed here
+        - List self-hosted LAN services here (for example a local Gotify, Bark, Apprise or Signal server), or set `direct` on those profiles instead
+    - If the proxy is unreachable, the notification fails and the failure is shown on the status page with the proxy address (any password masked); notifications are never silently sent direct instead
+    - Every provider profile also accepts its own **proxy** setting (below) to override this default, use a different proxy, or force `direct` for that profile
+
 ```yaml title="Config File Snippet"
 alerts:
   general:
@@ -562,6 +576,10 @@ alerts:
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
 
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__APPRISE_API__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
+
 ```yaml title="Config File Snippet"
 alerts:
   apprise_api:
@@ -610,6 +628,10 @@ Bark sends iOS push notifications via a Bark server (the public server at `https
     - Env: `FN_ALERTS__BARK__LEVEL`
     - Notification level: `active`, `timeSensitive`, or `passive`; empty sends the server default
 
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__BARK__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
+
 ```yaml title="Config File Snippet"
 alerts:
   bark:
@@ -641,6 +663,10 @@ alerts:
     - Env: `FN_ALERTS__DISCORD__TEMPLATE`
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__DISCORD__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
 alerts:  
@@ -678,6 +704,10 @@ alerts:
     - Env: `FN_ALERTS__GOTIFY__TEMPLATE`
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__GOTIFY__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
 alerts:  
@@ -719,6 +749,10 @@ alerts:
     - Env: `FN_ALERTS__MATRIX__TEMPLATE`
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__MATRIX__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
   matrix:
@@ -764,6 +798,10 @@ alerts:
     - Env: `FN_ALERTS__MATTERMOST__TEMPLATE`
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__MATTERMOST__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
   mattermost:
@@ -811,6 +849,10 @@ alerts:
     - Env: `FN_ALERTS__NTFY__TEMPLATE`
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__NTFY__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
 alerts: 
@@ -871,6 +913,10 @@ alerts:
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
 
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__PUSHOVER__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
+
 ```yaml title="Config File Snippet"
   pushover:
     enabled: true
@@ -917,6 +963,10 @@ alerts:
     - Env: `FN_ALERTS__SIGNAL__TEMPLATE`
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__SIGNAL__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
 alerts:
@@ -986,6 +1036,10 @@ alerts:
 - **msguuid** (Optional - Default: `false`)
     - Env: `FN_ALERTS__SMTP__MSGUUID`
     - Set to `true` to generate message-id from uuid
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__SMTP__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
 alerts:  
@@ -1093,6 +1147,10 @@ Within the response, locate your message to the bot, then grab the ID under `mes
     - Optionally specify a custom notification template
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
 
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__TELEGRAM__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
+
 ```yaml title="Config File Snippet"
 alerts:  
   telegram:
@@ -1179,6 +1237,10 @@ alerts:
     - Only applies when `method` is `POST`
     - For more information on template syntax, see [Alert Templates](./templates.md#alert-templates)
     - Note: Webhook templates **must** be valid JSON
+
+- **proxy** (Optional)
+    - Env: `FN_ALERTS__WEBHOOK__PROXY`
+    - Outbound proxy override for this profile: leave empty to follow `alerts.general.proxy`, set to `direct` to force a direct connection, or set a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
 
 ```yaml title="Config File Snippet"
   webhook:

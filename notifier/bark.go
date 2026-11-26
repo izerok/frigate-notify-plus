@@ -98,7 +98,7 @@ func SendBark(event models.Event, provider notifMeta) {
 	// checked below for the 200-with-error case.
 	barkURL := fmt.Sprintf("%s/%s", barkServer(profile), profile.DeviceKey)
 	header := map[string]string{"Content-Type": "application/json"}
-	response, err := util.HTTPPost(barkURL, false, data, "", header)
+	response, err := util.HTTPPostProxied(barkURL, false, profile.Proxy, data, "", header)
 	if err != nil {
 		log.Warn().
 			Str("event_id", event.ID).

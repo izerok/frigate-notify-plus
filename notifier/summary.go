@@ -182,6 +182,46 @@ func activityHasConcerns(start, end time.Time) (bool, error) {
 	return reviewsHaveConcerns(reviews), nil
 }
 
+// postSummaryRequest POSTs to Frigate's summarize endpoint. This used to
+// go through the shared util.HTTPPost helper, but that helper serves the
+// notification senders, while Frigate-bound traffic must follow the
+// Frigate request contract (login session, cookie jar, ignore-SSL flag)
+// — so the call now rides on util.HTTPPostFrigate. The old call's
+// observable behaviour is preserved: transport failures are retried up
+// to the configured attempt count with the same pause between attempts,
+// and a non-2xx status returns the response body together with an error
+// naming the status code, so requestFrigateSummary can keep surfacing
+// Frigate's own reason text exactly as before.
+func postSummaryRequest(url string, insecure bool, headers ...map[string]string) ([]byte, error) {
+	timeout := time.Duration(util.HTTPTimeout) * time.Second
+	attempts := util.HTTPMaxAttempts
+	if attempts < 1 {
+		attempts = 1
+	}
+	var body []byte
+	var status int
+	var err error
+	for attempt := 1; ; attempt++ {
+		body, status, err = util.HTTPPostFrigate(url, insecure, nil, "", timeout, headers...)
+		if err == nil {
+			break
+		}
+		if attempt >= attempts {
+			return nil, err
+		}
+		log.Warn().
+			Int("attempt", attempt).
+			Int("max_tries", attempts).
+			Err(err).
+			Msg("Summary request failed, retrying in 2 seconds...")
+		time.Sleep(2 * time.Second)
+	}
+	if status < 200 || status > 299 {
+		return body, fmt.Errorf("failed to send request, got status code %v", status)
+	}
+	return body, nil
+}
+
 func requestFrigateSummary(start, end time.Time) (string, error) {
 	url := fmt.Sprintf("%s/api/review/summarize/start/%d/end/%d",
 		config.ConfigData.Frigate.Server,
@@ -193,7 +233,7 @@ func requestFrigateSummary(start, end time.Time) (string, error) {
 		Str("url", url).
 		Msg("Requesting GenAI summary from Frigate")
 
-	response, err := util.HTTPPost(url, config.ConfigData.Frigate.Insecure, nil, "", config.ConfigData.Frigate.Headers...)
+	response, err := postSummaryRequest(url, config.ConfigData.Frigate.Insecure, config.ConfigData.Frigate.Headers...)
 
 	// Frigate answers non-2xx with a JSON body explaining why (no GenAI provider
 	// with the descriptions role, the user lacks access to all cameras, ...).

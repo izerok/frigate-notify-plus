@@ -2,9 +2,7 @@ package notifier
 
 import (
 	"context"
-	"crypto/tls"
 	"io"
-	"net/http"
 	"time"
 
 	_ "github.com/mattn/go-sqlite3"
@@ -16,6 +14,7 @@ import (
 
 	"github.com/izerok/frigate-notify-plus/config"
 	"github.com/izerok/frigate-notify-plus/models"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 // SendMatrix pushes alert message to Matrix chat via webhook
@@ -45,14 +44,12 @@ func SendMatrix(event models.Event, snapshot io.Reader, provider notifMeta) {
 		return
 	}
 
-	// Ignore self-signed certs if set
-	if profile.Insecure {
-		httpClient := &http.Client{Timeout: 10 * time.Second}
-		// Ignore SSL verification if set
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
-		m.Client = httpClient
-	}
+	// Route the client's requests through the profile's proxy (if any)
+	// and apply the ignore-SSL flag. ExternalClient covers media fetched
+	// from outside the homeserver, so it gets the same client.
+	proxyClient := proxyx.Client(profile.Proxy, 10*time.Second, profile.Insecure)
+	m.Client = proxyClient
+	m.ExternalClient = proxyClient
 
 	// Handle login
 	m.StateStore = mautrix.NewMemoryStateStore()

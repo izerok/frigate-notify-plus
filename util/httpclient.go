@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 var AppUserAgent string
@@ -40,11 +42,6 @@ func setUserAgent(req *http.Request) *http.Request {
 
 // HTTPGet is a simple HTTP client function to return page body
 func HTTPGet(url string, insecure bool, params string, headers ...map[string]string) ([]byte, error) {
-	// Append HTTP params if any
-	if len(params) > 0 {
-		url = url + params
-	}
-
 	// New HTTP Client
 	client := &http.Client{
 		Timeout: time.Duration(HTTPTimeout) * time.Second,
@@ -55,6 +52,27 @@ func HTTPGet(url string, insecure bool, params string, headers ...map[string]str
 	if insecure {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+
+	return httpGet(url, client, insecure, params, headers...)
+}
+
+// HTTPGetProxied is HTTPGet with the transport resolved from a per-profile
+// proxy setting (see the proxyx package): the request goes through the
+// configured outbound proxy unless the setting forces a direct connection
+// or the target is on the bypass list. It exists for notification-side
+// GETs (webhook GET deliveries, the monitor check-in); Frigate-bound
+// callers keep using HTTPGet, which never proxies.
+func HTTPGetProxied(url string, insecure bool, proxySetting string, params string, headers ...map[string]string) ([]byte, error) {
+	client := proxyx.Client(proxySetting, time.Duration(HTTPTimeout)*time.Second, insecure)
+	client.Jar = cookies
+	return httpGet(url, client, insecure, params, headers...)
+}
+
+func httpGet(url string, client *http.Client, insecure bool, params string, headers ...map[string]string) ([]byte, error) {
+	// Append HTTP params if any
+	if len(params) > 0 {
+		url = url + params
 	}
 
 	// Set auth cookies if Frigate request & auth is enabled
@@ -252,11 +270,6 @@ func HTTPPostFrigate(url string, insecure bool, payload []byte, contentType stri
 // HTTPPost performs an HTTP POST to the target URL
 // and includes auth parameters, ignoring certificates, etc
 func HTTPPost(url string, insecure bool, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
-	// Append HTTP params if any
-	if len(params) > 0 {
-		url = url + params
-	}
-
 	// New HTTP Client
 	client := http.Client{Timeout: time.Duration(HTTPTimeout) * time.Second}
 
@@ -264,6 +277,28 @@ func HTTPPost(url string, insecure bool, payload []byte, params string, headers 
 	if insecure {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+
+	return httpPost(url, &client, "", insecure, payload, params, headers...)
+}
+
+// HTTPPostProxied is HTTPPost with the transport resolved from a
+// per-profile proxy setting (see the proxyx package): the request goes
+// through the configured outbound proxy unless the setting forces a
+// direct connection or the target is on the bypass list. Only
+// notification senders use it — Frigate-bound POSTs go through
+// HTTPPostFrigate and never touch the proxy. When the proxy itself is
+// unreachable the returned error names it (with any password masked);
+// there is deliberately no silent fallback to a direct connection.
+func HTTPPostProxied(url string, insecure bool, proxySetting string, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	client := proxyx.Client(proxySetting, time.Duration(HTTPTimeout)*time.Second, insecure)
+	return httpPost(url, client, proxySetting, insecure, payload, params, headers...)
+}
+
+func httpPost(url string, client *http.Client, proxySetting string, insecure bool, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	// Append HTTP params if any
+	if len(params) > 0 {
+		url = url + params
 	}
 
 	var response *http.Response
@@ -327,6 +362,9 @@ func HTTPPost(url string, insecure bool, payload []byte, params string, headers 
 					Int("max_tries", HTTPMaxAttempts).
 					Err(err).
 					Msg("HTTP Request failed, retries exceeded")
+				if proxyx.WouldUseProxy(proxySetting, url) {
+					return nil, fmt.Errorf("request via proxy %s failed: %w", proxyx.Describe(proxySetting), err)
+				}
 				return nil, err
 			}
 			log.Warn().

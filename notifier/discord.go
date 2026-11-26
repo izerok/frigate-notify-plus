@@ -4,13 +4,16 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/rs/zerolog/log"
 
 	"github.com/disgoorg/disgo/discord"
+	"github.com/disgoorg/disgo/rest"
 	"github.com/disgoorg/disgo/webhook"
 	"github.com/izerok/frigate-notify-plus/config"
 	"github.com/izerok/frigate-notify-plus/models"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 // SendDiscordMessage pushes alert message to Discord via webhook
@@ -27,8 +30,16 @@ func SendDiscordMessage(event models.Event, snapshot io.Reader, provider notifMe
 		message = renderMessage("markdown", event, "message", "Discord")
 	}
 
-	// Connect to Discord
-	client, err := webhook.NewWithURL(profile.Webhook)
+	// Connect to Discord. When a proxy applies to this profile, inject a
+	// proxy-aware HTTP client into the webhook's REST client; otherwise
+	// keep the library default untouched.
+	var client webhook.Client
+	if proxyx.Configured(profile.Proxy) {
+		client, err = webhook.NewWithURL(profile.Webhook,
+			webhook.WithRestClientConfigOpts(rest.WithHTTPClient(proxyx.Client(profile.Proxy, 20*time.Second, false))))
+	} else {
+		client, err = webhook.NewWithURL(profile.Webhook)
+	}
 	if err != nil {
 		log.Warn().
 			Str("event_id", event.ID).
