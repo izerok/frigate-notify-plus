@@ -1,7 +1,5 @@
 # Changelog
 
-> **Fork note:** this file preserves the upstream release history of [0x2142/frigate-notify](https://github.com/0x2142/frigate-notify) through v0.5.4. This fork (Frigate Notify Plus) starts its own version line at **v0.1.0** below — it no longer follows upstream versioning, and the fork's earlier `v0.5.4-webui.*` prerelease series ends at `v0.5.4-webui.15`. See also the [Releases](https://github.com/izerok/frigate-notify-plus/releases) notes.
-
 ## [v0.1.0](https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.0) - Nov 25 2026
  - First release on this fork's own version line: Frigate Notify Plus no longer follows upstream frigate-notify versioning — the `v0.5.4-webui.*` prerelease series ends at `v0.5.4-webui.15`, and the app now reports itself as `v0.1.0`
  - Redesign the Web UI console: sidebar shell with a resident status summary, hash-based deep links (`#/status`, `#/config/<section>`, ...), a status dashboard, a floating save dock with change count and save-diff preview, and a tabbed template editor
