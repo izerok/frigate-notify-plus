@@ -2,6 +2,8 @@ English | [简体中文](README.zh-CN.md)
 
 # Frigate Notify Plus
 
+<p align="center"><img src="docs/img/logo.png" width="120" alt="Frigate Notify Plus logo"></p>
+
 [![GitHub Repo stars](https://img.shields.io/github/stars/izerok/frigate-notify-plus)](https://github.com/izerok/frigate-notify-plus) [![Latest tag](https://img.shields.io/github/v/tag/izerok/frigate-notify-plus)](https://github.com/izerok/frigate-notify-plus/releases) [![License: MIT](https://img.shields.io/github/license/izerok/frigate-notify-plus)](LICENSE) [![Go version](https://img.shields.io/github/go-mod/go-version/izerok/frigate-notify-plus)](go.mod)
 
 Frigate Notify Plus is a small Go sidecar for [Frigate](https://github.com/blakeblackshear/frigate) (0.18.x) that turns Frigate reviews and events into rich notifications — including Frigate's GenAI review descriptions — sent straight to your phone, with no Home Assistant required. Everything is configured from a built-in Web UI. It is a fork of [0x2142/frigate-notify](https://github.com/0x2142/frigate-notify) and keeps everything upstream does; the additions under [Key features](#key-features) are new in this fork.

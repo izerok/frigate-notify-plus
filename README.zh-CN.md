@@ -2,6 +2,8 @@
 
 # Frigate Notify Plus
 
+<p align="center"><img src="docs/img/logo.png" width="120" alt="Frigate Notify Plus logo"></p>
+
 [![GitHub Repo stars](https://img.shields.io/github/stars/izerok/frigate-notify-plus)](https://github.com/izerok/frigate-notify-plus) [![Latest tag](https://img.shields.io/github/v/tag/izerok/frigate-notify-plus)](https://github.com/izerok/frigate-notify-plus/releases) [![License: MIT](https://img.shields.io/github/license/izerok/frigate-notify-plus)](LICENSE) [![Go version](https://img.shields.io/github/go-mod/go-version/izerok/frigate-notify-plus)](go.mod)
 
 Frigate Notify Plus 是一个给 [Frigate](https://github.com/blakeblackshear/frigate)（0.18.x）用的小型 Go 伴随服务：把 Frigate 的 review 和事件变成内容丰富的通知——包括 Frigate 的 GenAI 评审描述——直接发到你的手机，不需要 Home Assistant。所有配置都在自带的 Web 界面里完成。它是 [0x2142/frigate-notify](https://github.com/0x2142/frigate-notify) 的 fork，保留了上游的全部功能；[主要特性](#主要特性)里列的都是这个 fork 新增的。
