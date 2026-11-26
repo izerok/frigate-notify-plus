@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.1.2](https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.2) - Nov 26 2026
+ - Add outbound proxy support for notification delivery: a global `alerts.general.proxy` (`url` + `no_proxy`) applies to every notification channel and the monitor check-in, and each provider profile accepts its own `proxy` override — empty follows the global proxy, `direct` forces a direct connection, or a proxy URL of its own (`http://`, `https://`, `socks5://` or `socks5h://`, optionally with credentials)
+ - The Frigate server itself is never proxied: its host is always on the bypass list, the `no_proxy` list also covers SMTP deliveries, and Frigate-bound requests keep following the Frigate HTTP contract
+ - No silent fallback: when the proxy is unreachable the delivery fails and the error names the proxy; proxy credentials are masked in logs, validation errors and the Web UI save-diff preview
+
 ## [v0.1.1](https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.1) - Nov 26 2026
  - Add a chat digest for scheduled GenAI summaries: Frigate's chat endpoint composes the window's events into one chronological digest, each schedule can carry a custom prompt, and a fallback ladder (chat -> summarize when the window has concerns -> per-event list -> "no activity" line) makes sure a digest is always delivered
  - Fix chat requests bypassing the shared Frigate HTTP contract: they now go through `util.HTTPPostFrigate` with the login session and `ignoressl` support, so digests work when Frigate authentication is enabled or Frigate serves a self-signed HTTPS certificate
