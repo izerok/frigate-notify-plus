@@ -27,14 +27,14 @@ const telegramCaptionMaxChars = 1024
 
 // newTelegramBot constructs the Telegram bot client for one profile. It
 // is a package-level seam so tests can point the bot at a mock Bot API
-// server instead of api.telegram.org. When a proxy applies to the
-// profile, the bot is built with a proxy-aware HTTP client; otherwise
-// the plain constructor is used, exactly as before.
+// server instead of api.telegram.org. The bot always gets a proxy-aware
+// HTTP client: an empty setting preserves the environment's proxy
+// behaviour (what the plain constructor did), a URL routes the calls
+// through it, and "direct" really disables proxies — a conditional
+// injection would leave "direct" profiles on the library client, which
+// still honours HTTP(S)_PROXY.
 var newTelegramBot = func(profile models.Telegram) (*tgbotapi.BotAPI, error) {
-	if proxyx.Configured(profile.Proxy) {
-		return tgbotapi.NewBotAPIWithClient(profile.Token, tgbotapi.APIEndpoint, proxyx.Client(profile.Proxy, 0, false))
-	}
-	return tgbotapi.NewBotAPI(profile.Token)
+	return tgbotapi.NewBotAPIWithClient(profile.Token, tgbotapi.APIEndpoint, proxyx.Client(profile.Proxy, 0, false))
 }
 
 // telegramClipMaxBytes returns the configured clip size limit in bytes, falling

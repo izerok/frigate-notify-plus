@@ -11,6 +11,7 @@ import (
 	envconfig "github.com/izerok/frigate-notify-plus/config/providers/env"
 	secretsconfig "github.com/izerok/frigate-notify-plus/config/providers/secrets"
 	"github.com/izerok/frigate-notify-plus/models"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 	"github.com/knadh/koanf/parsers/json"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -115,9 +116,20 @@ func Load() []string {
 		fmt.Println()
 	} else {
 		log.Info().Msg("Config file validated!")
+		ApplyProxyRuntime()
 	}
 
 	return validationErrors
+}
+
+// ApplyProxyRuntime publishes the proxy settings of ConfigData — the config
+// the app is actually running — to the proxyx package, which notification
+// senders consult on every delivery. It is deliberately called when a config
+// is accepted (startup load, successful reload), never from Validate: that
+// also runs on candidate configs that may still be rejected, and a rejected
+// save must not change how the running app delivers notifications.
+func ApplyProxyRuntime() {
+	proxyx.Configure(ConfigData.Alerts.General.Proxy.URL, ConfigData.Alerts.General.Proxy.NoProxy, ConfigData.Frigate.Server)
 }
 
 func Save(skipBackup bool) {

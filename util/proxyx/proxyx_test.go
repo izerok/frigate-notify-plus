@@ -397,3 +397,81 @@ func TestDialContextDirect(t *testing.T) {
 	}
 	conn.Close()
 }
+
+// TestDialContextHonoursNoProxy proves the SMTP dialer skips the proxy for
+// targets on the bypass list. The host does not resolve, so a direct dial
+// fails; any CONNECT at the fake proxy means the bypass was ignored.
+func TestDialContextHonoursNoProxy(t *testing.T) {
+	proxy := startFakeConnectProxy(t)
+	Configure("http://"+proxy.listener.Addr().String(), []string{"smtp.lan"}, "http://frigate.lan:5000")
+	t.Cleanup(func() { Configure("", nil, "") })
+
+	dial := DialContext("")
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	if _, err := dial(ctx, "tcp", "smtp.lan:25"); err == nil {
+		t.Fatal("dial to the bypassed host unexpectedly succeeded")
+	}
+	time.Sleep(100 * time.Millisecond)
+	if proxy.connectLine != "" {
+		t.Fatalf("bypassed host was tunneled through the proxy: %q", proxy.connectLine)
+	}
+}
+
+// A target that is not on the bypass list still goes through the proxy.
+func TestDialContextProxiesNonBypassedTargets(t *testing.T) {
+	proxy := startFakeConnectProxy(t)
+	Configure("http://"+proxy.listener.Addr().String(), []string{"smtp.lan"}, "")
+	t.Cleanup(func() { Configure("", nil, "") })
+
+	dial := DialContext("")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	conn, err := dial(ctx, "tcp", "smtp.example.com:25")
+	if err != nil {
+		t.Fatalf("DialContext: %v", err)
+	}
+	conn.Close()
+	if proxy.connectLine != "CONNECT smtp.example.com:25 HTTP/1.1" {
+		t.Errorf("proxy saw %q, want the CONNECT tunnel", proxy.connectLine)
+	}
+}
+
+func TestProxyDialAddressDefaultPorts(t *testing.T) {
+	cases := []struct{ raw, want string }{
+		{"http://proxy.lan", "proxy.lan:80"},
+		{"https://proxy.lan", "proxy.lan:443"},
+		{"socks5://proxy.lan", "proxy.lan:1080"},
+		{"socks5h://proxy.lan", "proxy.lan:1080"},
+		{"http://proxy.lan:7890", "proxy.lan:7890"},
+		{"socks5://[::1]", "[::1]:1080"},
+	}
+	for _, tc := range cases {
+		u, err := url.Parse(tc.raw)
+		if err != nil {
+			t.Fatalf("parse %q: %v", tc.raw, err)
+		}
+		got, err := proxyDialAddress(u)
+		if err != nil {
+			t.Errorf("proxyDialAddress(%q) error: %v", tc.raw, err)
+			continue
+		}
+		if got != tc.want {
+			t.Errorf("proxyDialAddress(%q) = %q, want %q", tc.raw, got, tc.want)
+		}
+	}
+}
+
+// A parse failure must not echo the address: it carries credentials and
+// ends up in the API's 422 body and the logs.
+func TestValidateURLErrorDoesNotLeakCredentials(t *testing.T) {
+	err := ValidateURL("http://alice:s3cr3t@proxy.lan:http")
+	if err == nil {
+		t.Fatal("ValidateURL accepted an invalid port")
+	}
+	for _, secret := range []string{"s3cr3t", "alice"} {
+		if strings.Contains(err.Error(), secret) {
+			t.Errorf("validation error leaked %q: %s", secret, err)
+		}
+	}
+}

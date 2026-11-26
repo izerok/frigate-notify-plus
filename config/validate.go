@@ -716,14 +716,12 @@ func (c *Config) validateGenAISchedules() []string {
 // validateProxy checks the outbound proxy settings: the global proxy URL
 // and bypass list, plus every profile's proxy override (validated for all
 // profiles, not just enabled ones, so a malformed value is caught when it
-// is saved rather than when the profile is first enabled). It also hands
-// the global values to the proxyx package, which senders consult on every
-// send; validation runs on startup and on every config save, so proxy
-// changes take effect without a restart.
+// is saved rather than when the profile is first enabled). Validation is
+// pure: the accepted config is published to the proxyx package separately
+// (see ApplyProxyRuntime), so a rejected save cannot change the proxy the
+// running app uses.
 func (c *Config) validateProxy() []string {
 	var proxyErrors []string
-
-	proxyx.Configure(c.Alerts.General.Proxy.URL, c.Alerts.General.Proxy.NoProxy, c.Frigate.Server)
 
 	if url := strings.TrimSpace(c.Alerts.General.Proxy.URL); url != "" {
 		if err := proxyx.ValidateURL(url); err != nil {

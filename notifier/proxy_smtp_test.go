@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -186,6 +187,59 @@ func TestSMTPThroughConnectProxy(t *testing.T) {
 		t.Errorf("proxy saw CONNECT %q, want smtp.test:25", connectTarget)
 	}
 	if received := smtpServer.received(); !strings.Contains(received, "sent through the tunnel") {
+		t.Errorf("SMTP server received %q, want the message body", received)
+	}
+}
+
+// TestSMTPBypassesProxyForLoopbackServer proves the SMTP sender honours the
+// bypass list: with a global proxy configured, mail to a loopback relay is
+// delivered directly instead of being tunnelled through the proxy.
+func TestSMTPBypassesProxyForLoopbackServer(t *testing.T) {
+	smtpServer := startFakeSMTPServer(t)
+	proxy := startConnectProxyForSMTP(t, smtpServer.listener.Addr().String())
+
+	proxyx.Configure("http://"+proxy.listener.Addr().String(), nil, "")
+	t.Cleanup(func() { proxyx.Configure("", nil, "") })
+
+	_, portStr, err := net.SplitHostPort(smtpServer.listener.Addr().String())
+	if err != nil {
+		t.Fatal(err)
+	}
+	port, err := strconv.Atoi(portStr)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	client, err := mail.NewClient("127.0.0.1",
+		mail.WithPort(port),
+		mail.WithTLSPolicy(mail.NoTLS),
+		mail.WithTimeout(10*time.Second),
+		mail.WithDialContextFunc(proxyx.DialContext("")),
+	)
+	if err != nil {
+		t.Fatalf("mail.NewClient: %v", err)
+	}
+
+	msg := mail.NewMsg()
+	if err := msg.From("alerts@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	if err := msg.To("user@example.com"); err != nil {
+		t.Fatal(err)
+	}
+	msg.Subject("Bypassed SMTP Test")
+	msg.SetBodyString(mail.TypeTextPlain, "sent directly")
+
+	if err := client.DialAndSend(msg); err != nil {
+		t.Fatalf("DialAndSend with a bypassed target: %v", err)
+	}
+	proxy.mu.Lock()
+	connectTarget := proxy.connect
+	proxy.mu.Unlock()
+	if connectTarget != "" {
+		t.Errorf("proxy saw CONNECT %q for a bypassed loopback host", connectTarget)
+	}
+	if received := smtpServer.received(); !strings.Contains(received, "sent directly") {
 		t.Errorf("SMTP server received %q, want the message body", received)
 	}
 }

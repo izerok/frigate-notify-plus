@@ -85,7 +85,14 @@ func ValidateURL(raw string) error {
 	}
 	u, err := url.Parse(raw)
 	if err != nil {
-		return fmt.Errorf("proxy address cannot be parsed: %s", err)
+		// url.Error echoes the whole address, credentials included, so
+		// only the underlying reason is reported: this message ends up in
+		// the API's 422 response and in the logs.
+		var uerr *url.Error
+		if errors.As(err, &uerr) && uerr.Err != nil {
+			return fmt.Errorf("proxy address cannot be parsed: %s", uerr.Err)
+		}
+		return errors.New("proxy address cannot be parsed")
 	}
 	switch strings.ToLower(u.Scheme) {
 	case "http", "https", "socks5", "socks5h":
@@ -252,17 +259,28 @@ func Describe(profileSetting string) string {
 // protocols (SMTP) that establishes connections through the proxy the
 // setting resolves to: a CONNECT tunnel for http/https proxies, a SOCKS5
 // dialer for socks5/socks5h proxies, and a plain dialer when no proxy
-// applies or the setting forces a direct connection.
+// applies, the setting forces a direct connection, or the target is on the
+// bypass list. The bypass check is made per dial, so no_proxy covers SMTP
+// like it covers the HTTP senders.
 func DialContext(profileSetting string) func(ctx context.Context, network, addr string) (net.Conn, error) {
 	proxyURL, direct := Effective(profileSetting)
+	dialer := &net.Dialer{Timeout: dialTimeout}
 	if direct || proxyURL == "" {
-		dialer := &net.Dialer{Timeout: dialTimeout}
 		return dialer.DialContext
 	}
 	u, err := url.Parse(proxyURL)
 	if err != nil {
-		dialer := &net.Dialer{Timeout: dialTimeout}
 		return dialer.DialContext
+	}
+	proxyAddr, err := proxyDialAddress(u)
+	if err != nil {
+		return func(context.Context, string, string) (net.Conn, error) { return nil, err }
+	}
+	directFor := func(ctx context.Context, network, addr string) (net.Conn, error) {
+		if bypassedTarget(proxyURL, addr) {
+			return dialer.DialContext(ctx, network, addr)
+		}
+		return nil, nil
 	}
 	switch strings.ToLower(u.Scheme) {
 	case "socks5", "socks5h":
@@ -271,30 +289,69 @@ func DialContext(profileSetting string) func(ctx context.Context, network, addr 
 			password, _ := u.User.Password()
 			auth = &proxy.Auth{User: u.User.Username(), Password: password}
 		}
-		forward := &net.Dialer{Timeout: dialTimeout}
-		socksDialer, err := proxy.SOCKS5("tcp", u.Host, auth, forward)
+		socksDialer, err := proxy.SOCKS5("tcp", proxyAddr, auth, dialer)
 		if err != nil {
 			return func(context.Context, string, string) (net.Conn, error) { return nil, err }
 		}
-		if contextDialer, ok := socksDialer.(proxy.ContextDialer); ok {
-			return contextDialer.DialContext
-		}
-		return func(_ context.Context, network, addr string) (net.Conn, error) {
+		dialSocks := func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if contextDialer, ok := socksDialer.(proxy.ContextDialer); ok {
+				return contextDialer.DialContext(ctx, network, addr)
+			}
 			return socksDialer.Dial(network, addr)
+		}
+		return func(ctx context.Context, network, addr string) (net.Conn, error) {
+			if conn, err := directFor(ctx, network, addr); conn != nil || err != nil {
+				return conn, err
+			}
+			return dialSocks(ctx, network, addr)
 		}
 	default: // http, https
 		return func(ctx context.Context, network, addr string) (net.Conn, error) {
-			return dialConnect(ctx, u, addr)
+			if conn, err := directFor(ctx, network, addr); conn != nil || err != nil {
+				return conn, err
+			}
+			return dialConnect(ctx, u, proxyAddr, addr)
 		}
 	}
+}
+
+// bypassedTarget reports whether a connection to addr (host:port, as dialers
+// pass it) skips the proxy under the current bypass list. Host matching is
+// the same one Transport uses, so both paths honour no_proxy identically.
+func bypassedTarget(proxyURL, addr string) bool {
+	proxy, err := proxyFunc(proxyURL)(&http.Request{URL: &url.URL{Scheme: "http", Host: addr}})
+	return err == nil && proxy == nil
+}
+
+// proxyDialAddress returns the host:port to dial for the proxy itself,
+// filling in the scheme's default port when the URL omits one. net/http
+// does this for proxied HTTP requests; raw dialers have to do it
+// themselves, or a portless proxy address fails with "missing port".
+func proxyDialAddress(u *url.URL) (string, error) {
+	host := u.Hostname()
+	if host == "" {
+		return "", errors.New("proxy address must include a host name or IP address")
+	}
+	port := u.Port()
+	if port == "" {
+		switch strings.ToLower(u.Scheme) {
+		case "http":
+			port = "80"
+		case "https":
+			port = "443"
+		default: // socks5, socks5h
+			port = "1080"
+		}
+	}
+	return net.JoinHostPort(host, port), nil
 }
 
 // dialConnect opens a TCP connection to addr through an HTTP proxy using
 // the CONNECT method. For https proxies the connection to the proxy
 // itself is wrapped in TLS first.
-func dialConnect(ctx context.Context, proxyURL *url.URL, addr string) (net.Conn, error) {
+func dialConnect(ctx context.Context, proxyURL *url.URL, proxyAddr, addr string) (net.Conn, error) {
 	dialer := &net.Dialer{Timeout: dialTimeout}
-	conn, err := dialer.DialContext(ctx, "tcp", proxyURL.Host)
+	conn, err := dialer.DialContext(ctx, "tcp", proxyAddr)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to proxy %s: %w", proxyURL.Redacted(), err)
 	}

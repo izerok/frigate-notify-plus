@@ -295,15 +295,38 @@ func HTTPPostProxied(url string, insecure bool, proxySetting string, payload []b
 	return httpPost(url, client, proxySetting, insecure, payload, params, headers...)
 }
 
+// HTTPPostProxiedOnce is HTTPPostProxied with exactly one attempt. Senders
+// whose API may have accepted a message even though the response was lost
+// (Pushover, whose previous client sent once) use it: retrying a
+// non-idempotent delivery can produce duplicate notifications.
+func HTTPPostProxiedOnce(url string, insecure bool, proxySetting string, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	client := proxyx.Client(proxySetting, time.Duration(HTTPTimeout)*time.Second, insecure)
+	return httpPostAttempts(url, client, proxySetting, insecure, payload, params, 1, headers...)
+}
+
 func httpPost(url string, client *http.Client, proxySetting string, insecure bool, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	return httpPostAttempts(url, client, proxySetting, insecure, payload, params, HTTPMaxAttempts, headers...)
+}
+
+func httpPostAttempts(url string, client *http.Client, proxySetting string, insecure bool, payload []byte, params string, maxAttempts int, headers ...map[string]string) ([]byte, error) {
 	// Append HTTP params if any
 	if len(params) > 0 {
 		url = url + params
 	}
 
+	// The historical loop had a hard cap of six attempts; keep it so a
+	// misconfigured attempt count cannot spin forever (and never leaves
+	// the loop with a nil response).
+	attempts := maxAttempts
+	if attempts < 1 {
+		attempts = 1
+	}
+	if attempts > 6 {
+		attempts = 6
+	}
+
 	var response *http.Response
-	retry := 1
-	for retry <= 6 {
+	for attempt := 1; ; attempt++ {
 		// Setup new HTTP Request
 		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 		if err != nil {
@@ -355,26 +378,24 @@ func httpPost(url string, client *http.Client, proxySetting string, insecure boo
 		response, err = client.Do(req)
 		if err == nil {
 			break
-		} else {
-			if retry == HTTPMaxAttempts {
-				log.Warn().
-					Int("attempt", retry).
-					Int("max_tries", HTTPMaxAttempts).
-					Err(err).
-					Msg("HTTP Request failed, retries exceeded")
-				if proxyx.WouldUseProxy(proxySetting, url) {
-					return nil, fmt.Errorf("request via proxy %s failed: %w", proxyx.Describe(proxySetting), err)
-				}
-				return nil, err
-			}
-			log.Warn().
-				Int("attempt", retry).
-				Int("max_tries", HTTPMaxAttempts).
-				Err(err).
-				Msg("HTTP Request failed, retrying in 2 seconds...")
-			retry += 1
-			time.Sleep(2 * time.Second)
 		}
+		if attempt >= attempts {
+			log.Warn().
+				Int("attempt", attempt).
+				Int("max_tries", attempts).
+				Err(err).
+				Msg("HTTP Request failed, retries exceeded")
+			if proxyx.WouldUseProxy(proxySetting, url) {
+				return nil, fmt.Errorf("request via proxy %s failed: %w", proxyx.Describe(proxySetting), err)
+			}
+			return nil, err
+		}
+		log.Warn().
+			Int("attempt", attempt).
+			Int("max_tries", attempts).
+			Err(err).
+			Msg("HTTP Request failed, retrying in 2 seconds...")
+		time.Sleep(2 * time.Second)
 	}
 
 	defer response.Body.Close()

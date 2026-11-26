@@ -12,6 +12,7 @@ import (
 
 	"github.com/danielgtaylor/huma/v2/humatest"
 	"github.com/izerok/frigate-notify-plus/config"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 // stubFrigateForProxyTest answers the version check config validation
@@ -46,7 +47,13 @@ func putConfigForProxyTest(t *testing.T, api humatest.TestAPI, frigateURL string
 // override, and that a well-formed proxy config validates cleanly.
 func TestPutConfigProxyValidation(t *testing.T) {
 	origConfig := config.ConfigData
-	t.Cleanup(func() { config.ConfigData = origConfig })
+	// This test runs PUTs with skipreload, so nothing publishes proxyx
+	// state through the normal path; reset it regardless so the package
+	// global never leaks into other tests (proxyx state is process-wide).
+	t.Cleanup(func() {
+		config.ConfigData = origConfig
+		proxyx.Configure("", nil, "")
+	})
 
 	frigateURL := stubFrigateForProxyTest(t)
 

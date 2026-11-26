@@ -199,7 +199,10 @@ func (m *pushoverMessage) send(profile models.Pushover) (*pushoverResponse, erro
 		contentType = "application/x-www-form-urlencoded"
 	}
 
-	responseBody, err := util.HTTPPostProxied(pushoverAPIEndpoint+"/messages.json", false, profile.Proxy,
+	// One attempt only: Pushover may accept a message even when the
+	// response is lost, and the previous client sent exactly once, so a
+	// retry here would send duplicates (worst for emergency priority).
+	responseBody, err := util.HTTPPostProxiedOnce(pushoverAPIEndpoint+"/messages.json", false, profile.Proxy,
 		body, "", map[string]string{"Content-Type": contentType})
 
 	// The API answers errors with a JSON body naming them; surface those

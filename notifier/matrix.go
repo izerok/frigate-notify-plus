@@ -46,10 +46,15 @@ func SendMatrix(event models.Event, snapshot io.Reader, provider notifMeta) {
 
 	// Route the client's requests through the profile's proxy (if any)
 	// and apply the ignore-SSL flag. ExternalClient covers media fetched
-	// from outside the homeserver, so it gets the same client.
-	proxyClient := proxyx.Client(profile.Proxy, 10*time.Second, profile.Insecure)
-	m.Client = proxyClient
-	m.ExternalClient = proxyClient
+	// from outside the homeserver, so it gets the same client. When
+	// neither applies, leave mautrix's own client alone: it uses a 180 s
+	// timeout, and replacing it with a short one would break slow
+	// homeservers and media transfers.
+	if proxyx.Configured(profile.Proxy) || profile.Insecure {
+		proxyClient := proxyx.Client(profile.Proxy, 180*time.Second, profile.Insecure)
+		m.Client = proxyClient
+		m.ExternalClient = proxyClient
+	}
 
 	// Handle login
 	m.StateStore = mautrix.NewMemoryStateStore()

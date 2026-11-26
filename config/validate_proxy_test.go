@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/izerok/frigate-notify-plus/models"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 func TestValidateProxy(t *testing.T) {
@@ -51,5 +52,32 @@ func TestValidateProxy(t *testing.T) {
 	results = config.validateProxy()
 	if len(results) != 2 {
 		t.Errorf("Expected errors for both bark and smtp profiles, got: %v", results)
+	}
+}
+
+// Validation must not publish proxy settings: it also runs on candidate
+// configs that a save then rejects, and a rejected save must not change how
+// the running app delivers notifications.
+func TestValidateProxyDoesNotPublishRuntimeState(t *testing.T) {
+	origConfig := ConfigData
+	t.Cleanup(func() {
+		ConfigData = origConfig
+		proxyx.Configure("", nil, "")
+	})
+	proxyx.Configure("", nil, "")
+
+	cfg := Config{}
+	cfg.Alerts.General.Proxy = models.Proxy{URL: "http://127.0.0.1:7890"}
+	if results := cfg.validateProxy(); len(results) != 0 {
+		t.Fatalf("unexpected validation errors: %v", results)
+	}
+	if proxyx.Configured("") {
+		t.Fatal("validateProxy published proxy state for a config that is not in use")
+	}
+
+	ConfigData = cfg
+	ApplyProxyRuntime()
+	if !proxyx.Configured("") {
+		t.Fatal("ApplyProxyRuntime did not publish the accepted config's proxy")
 	}
 }

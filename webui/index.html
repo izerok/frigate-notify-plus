@@ -1046,6 +1046,10 @@ footer { text-align: center; }
 <div id="toast" role="status" aria-live="polite"></div>
 <script>
 const SECRET_HINT = /token|password|secret|passwd|api[_-]?key|device[_-]?key/i;
+// Proxy settings are addresses, not secrets — but a proxy address may embed
+// user:password credentials, and those must be masked like any other secret.
+const PROXY_HINT = /(^|\.)proxy(\.url)?$/;
+function proxyWithCredentials(v){ return typeof v==='string' && /:\/\/[^\s/]*@/.test(v); }
 const MASK = '********';
 // ---- i18n (Phase 11) -------------------------------------------------------
 // UI language: 'zh' (default) or 'en', persisted in localStorage
@@ -2069,7 +2073,7 @@ function applyRecommended(btn){
 }
 function fieldHtml(path, label, value, type){
   const id = 'f_'+path.replace(/[^a-zA-Z0-9]/g,'_');
-  const isSecret = SECRET_HINT.test(path);
+  const isSecret = SECRET_HINT.test(path) || (PROXY_HINT.test(path) && proxyWithCredentials(value));
   // E1: Chinese label on its own line, field path as a small muted suffix
   // below it. The path wraps only at dots (pathHtml inserts <wbr> after
   // each '.'), never mid-word.
@@ -3014,6 +3018,9 @@ function diffValStr(v){
   if(v===undefined) return '—';
   let s = typeof v==='string' ? v : JSON.stringify(v);
   if(s===undefined) s = String(v);
+  // A value can carry proxy credentials indirectly (a whole added profile,
+  // a webhook URL); mask them before anything is shown or truncated.
+  s = redactProxyStr(s);
   return s.length>60 ? s.slice(0,60)+'…' : s;
 }
 function prettyDiffPath(p){
@@ -3052,7 +3059,7 @@ function flattenDiff(a, b, base){
   return out;
 }
 function isProxyPath(p){ return p==='alerts.general.proxy' || p==='alerts.general.proxy.url' || /(^|\.)proxy$/.test(p); }
-function redactProxyStr(s){ return String(s).replace(/([a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s:/@]+):[^\s@]+@/g, '$1:***@'); }
+function redactProxyStr(s){ return String(s).replace(/([a-zA-Z][a-zA-Z0-9+.-]*:\/\/)[^"\s,]*@/g, '$1***@'); }
 function renderSaveDiff(diff){
   const rows = diff.map(d=>{
     const label = prettyDiffPath(d.path) + (d.added ? t('diff.added') : d.removed ? t('diff.removed') : '');

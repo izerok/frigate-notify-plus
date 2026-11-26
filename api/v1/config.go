@@ -114,6 +114,10 @@ func reloadCfg(newconfig config.Config, skipSave bool, skipBackup bool) {
 	}
 
 	config.ConfigData = newconfig
+	// Publish the proxy settings of the config now in use. This is the
+	// point where a config becomes live, so a save that failed validation
+	// never reaches here and leaves the previous proxy untouched.
+	config.ApplyProxyRuntime()
 	if !skipSave {
 		config.Save(skipBackup)
 	}
