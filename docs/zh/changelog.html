@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>更新日志 — Frigate Notify Plus 文档</title>
+<meta name="description" content="Frigate Notify Plus 文档——带 GenAI 总结与完整 Web UI 的 Frigate 通知。">
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --blue-soft:#eff6ff;
+    --ink:#0f172a; --muted:#64748b; --faint:#94a3b8;
+    --bg:#f8fafc; --surface:#ffffff; --border:#e2e8f0;
+    --radius:12px;
+    --shadow-lg:0 24px 60px -12px rgba(15,23,42,.18), 0 4px 16px rgba(15,23,42,.06);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05), 0 4px 14px rgba(15,23,42,.05);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans","PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC","Helvetica Neue",Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  /* ---------- top bar (same as landing) ---------- */
+  header.site{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .bar{display:flex;align-items:center;gap:28px;height:64px;max-width:1360px;margin:0 auto;padding:0 24px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--ink);white-space:nowrap}
+  .brand:hover{text-decoration:none}
+  .brand .plus{color:var(--blue)}
+  nav.top{display:flex;gap:26px;margin-left:auto;align-items:center}
+  nav.top a{color:#334155;font-size:15px;font-weight:500}
+  nav.top a:hover{color:var(--blue);text-decoration:none}
+  nav.top a.current{color:var(--blue);font-weight:600;box-shadow:inset 0 -2px 0 var(--blue);padding:4px 0}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:15px;font-weight:600;border-radius:10px;
+    padding:10px 18px;border:1px solid transparent;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .btn:hover{text-decoration:none}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:var(--blue-dark)}
+  .btn-sm{padding:8px 14px;font-size:14px}
+  .langpill{display:flex;gap:2px;padding:3px;border-radius:999px;background:#f1f5f9;border:1px solid var(--border)}
+  .langpill button{
+    font:inherit;font-size:13.5px;font-weight:600;line-height:1.35;
+    border:none;background:transparent;color:#64748b;
+    padding:4px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  }
+  .langpill button.active{background:var(--blue);color:#fff}
+
+  /* ---------- docs layout ---------- */
+  .docs-wrap{max-width:1360px;margin:0 auto;padding:34px 24px 72px;
+    display:grid;grid-template-columns:236px minmax(0,1fr) 224px;gap:36px;align-items:start}
+  .side{position:sticky;top:92px}
+  .sidenav{display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 116px);overflow-y:auto;padding-right:4px}
+  .sidenav a{
+    color:#334155;font-size:14.5px;font-weight:500;line-height:1.4;
+    padding:7px 12px;border-radius:8px;border-left:3px solid transparent;
+  }
+  .sidenav a:hover{background:#eef2f7;color:var(--ink);text-decoration:none}
+  .sidenav a.active{background:var(--blue-soft);color:var(--blue-dark);font-weight:600;border-left-color:var(--blue)}
+  .side-group{
+    margin:16px 0 6px;padding:0 12px;
+    font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+  }
+  .side-group:first-child{margin-top:0}
+
+  /* mobile pill strip (hidden on desktop) */
+  .pillstrip{display:none}
+
+  .crumbs{font-size:13.5px;color:var(--faint);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .crumbs a{color:var(--muted);font-weight:500}
+  .crumbs a:hover{color:var(--blue)}
+  .crumbs .sep{color:#cbd5e1}
+  .crumbs .here{color:var(--ink);font-weight:600}
+
+  .article{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);padding:42px 46px 38px;min-width:0;
+  }
+
+  /* ---------- article typography ---------- */
+  .article h1{font-size:33px;font-weight:800;letter-spacing:-.015em;line-height:1.2;margin-bottom:18px}
+  .article h2{font-size:23px;font-weight:750;letter-spacing:-.01em;line-height:1.3;
+    margin:42px 0 14px;padding-top:30px;border-top:1px solid var(--border)}
+  .article h1 + h2{margin-top:30px;padding-top:26px}
+  .article h3{font-size:18.5px;font-weight:700;margin:30px 0 10px}
+  .article h4{font-size:16px;font-weight:700;margin:24px 0 8px}
+  .article p{font-size:15.5px;line-height:1.75;color:#1e293b;margin:0 0 14px}
+  .article ul,.article ol{margin:0 0 14px;padding-left:24px;font-size:15.5px;line-height:1.7;color:#1e293b}
+  .article li{margin:5px 0}
+  .article li > ul,.article li > ol{margin:5px 0 2px}
+  .article strong{color:var(--ink)}
+  .article hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .article img{max-width:100%;height:auto;border-radius:8px}
+  .article blockquote{border-left:3px solid #dbeafe;background:var(--blue-soft);
+    padding:12px 18px;border-radius:0 10px 10px 0;margin:0 0 16px}
+  .article blockquote p{margin:0}
+
+  .article code{
+    font-family:var(--mono);font-size:.86em;
+    background:#f1f5f9;border:1px solid var(--border);border-radius:6px;
+    padding:1px 6px;color:var(--ink);
+    overflow-wrap:anywhere;
+  }
+  main{min-width:0}
+  /* code blocks: light slate, filename strip + copy chip */
+  .article .highlight{
+    position:relative;background:#f8fafc;border:1px solid var(--border);
+    border-radius:var(--radius);margin:0 0 20px;overflow:hidden;
+  }
+  .article .highlight .filename{
+    display:block;background:#eef2f7;border-bottom:1px solid var(--border);
+    font-family:var(--mono);font-size:12.5px;color:var(--muted);
+    padding:8px 16px;
+  }
+  .article .highlight::after{
+    content:"Copy";position:absolute;top:7px;right:10px;
+    font-size:11.5px;font-weight:600;color:var(--muted);
+    background:#fff;border:1px solid var(--border);border-radius:7px;padding:3px 9px;
+  }
+  .article .highlight pre{
+    padding:17px 20px;overflow-x:auto;background:transparent;
+    font-family:var(--mono);font-size:13px;line-height:1.7;white-space:pre;
+  }
+  .article .highlight pre code{background:none;border:none;padding:0;white-space:pre;font-size:13px}
+  .article .highlight .c,.article .highlight .c1,.article .highlight .cm{color:#94a3b8;font-style:italic}
+  .article .highlight .nt{color:var(--blue-dark)}
+  .article .highlight .s,.article .highlight .s1,.article .highlight .s2{color:#047857}
+  .article .highlight .k,.article .highlight .kd,.article .highlight .kn{color:#6d28d9}
+  .article .highlight .p{color:#64748b}
+  .article .highlight .err{background:none;color:inherit}
+
+  /* tables */
+  .article table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14.5px;display:block;overflow-x:auto}
+  .article th{background:#f8fafc;font-weight:650;text-align:left;color:var(--ink)}
+  .article th,.article td{border:1px solid var(--border);padding:9px 13px;line-height:1.55;vertical-align:top}
+  .article tbody tr:nth-child(even){background:#fbfcfe}
+
+  /* callouts */
+  .article .admonition{
+    border-radius:var(--radius);padding:15px 19px 4px;margin:0 0 20px;
+    border:1px solid #dbeafe;background:var(--blue-soft);
+  }
+  .article .admonition .admonition-title{
+    font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--blue-dark);margin-bottom:8px;
+  }
+  .article .admonition p{font-size:15px}
+  .article .admonition.tip{border-color:#a7f3d0;background:#ecfdf5}
+  .article .admonition.tip .admonition-title{color:#047857}
+  .article .admonition.warning,.article .admonition.caution{border-color:#fde68a;background:#fffbeb}
+  .article .admonition.warning .admonition-title,.article .admonition.caution .admonition-title{color:#b45309}
+  .article .admonition.danger,.article .admonition.error{border-color:#fecaca;background:#fef2f2}
+  .article .admonition.danger .admonition-title,.article .admonition.error .admonition-title{color:#b91c1c}
+  .article details{
+    border:1px solid #dbeafe;background:var(--blue-soft);
+    border-radius:var(--radius);padding:14px 19px;margin:0 0 20px;
+  }
+  .article details summary{
+    font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--blue-dark);cursor:pointer;margin-bottom:6px;
+  }
+  .article details p{font-size:15px}
+
+  /* prev / next */
+  .prevnext{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:34px}
+  .pn-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 20px;display:flex;flex-direction:column;gap:3px;box-shadow:var(--shadow-sm);
+  }
+  .pn-card:hover{border-color:#bfdbfe;text-decoration:none}
+  .pn-card.next{text-align:right;align-items:flex-end}
+  .pn-cap{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .pn-name{font-size:16px;font-weight:650;color:var(--ink)}
+
+  /* ---------- on-this-page TOC ---------- */
+  .toc{position:sticky;top:92px}
+  .toc-box{border-left:2px solid var(--border);padding-left:16px;max-height:calc(100vh - 116px);overflow-y:auto}
+  .toc-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .toc a{display:block;font-size:13.5px;line-height:1.45;color:var(--muted);padding:3.5px 0}
+  .toc a:hover{color:var(--blue);text-decoration:none}
+  .toc a.lvl3{padding-left:14px;font-size:13px}
+
+  /* ---------- footer (same as landing) ---------- */
+  footer{background:#0f172a;color:#94a3b8;padding:56px 0 40px}
+  .foot{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}
+  .foot .brand{color:#fff}
+  .foot-links{display:flex;gap:28px}
+  .foot-links a{color:#cbd5e1;font-size:15px;font-weight:500}
+  .foot-links a:hover{color:#fff}
+  .foot-meta{margin-top:34px;padding-top:22px;border-top:1px solid #1e293b;font-size:13.5px;color:#64748b;line-height:1.7}
+  .foot-meta a{color:#94a3b8;text-decoration:underline}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1180px){
+    .docs-wrap{grid-template-columns:236px minmax(0,1fr)}
+    .toc{display:none}
+  }
+  @media (max-width:880px){
+    .docs-wrap{grid-template-columns:minmax(0,1fr);padding-top:0;gap:22px}
+    .side{display:none}
+    .pillstrip{
+      display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+      position:sticky;top:64px;z-index:40;
+      background:rgba(248,250,252,.94);backdrop-filter:blur(10px);
+      margin:0 -24px;padding:12px 24px;border-bottom:1px solid var(--border);
+    }
+    .pillstrip::-webkit-scrollbar{display:none}
+    .pillstrip a{
+      flex:0 0 auto;font-size:13.5px;font-weight:600;color:#475569;
+      background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px;
+    }
+    .pillstrip a:hover{text-decoration:none;border-color:#cbd5e1}
+    .pillstrip a.active{background:var(--blue);border-color:var(--blue);color:#fff}
+    .article{padding:28px 22px 26px}
+    .article h1{font-size:27px}
+    .prevnext{grid-template-columns:1fr}
+    .pn-card.next{text-align:left;align-items:flex-start}
+  }
+  @media (max-width:760px){
+    nav.top a:not(.keep){display:none}
+    nav.top{gap:14px}
+  }
+  @media (max-width:560px){
+    .bar{gap:12px}
+    .brand{font-size:16px}
+    .bar .btn{display:none}
+    .langpill button{padding:4px 11px}
+  }
+
+  .langpill a{font-size:13.5px;font-weight:600;line-height:1.35;color:#64748b;padding:4px 13px;border-radius:999px;white-space:nowrap}
+  .langpill a:hover{text-decoration:none;color:var(--blue)}
+  .langpill a.active{background:var(--blue);color:#fff}
+  @media (max-width:560px){.langpill a{padding:4px 11px}}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <a class="brand" href="../../index.html">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2563eb"/><path d="M16 6.5 8 9.3v6.1c0 5 3.4 8.6 8 10.1 4.6-1.5 8-5.1 8-10.1V9.3L16 6.5Z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 11.2a3.4 3.4 0 0 1 3.4 3.4c0 2.6.8 3.4 1.3 4H11.3c.5-.6 1.3-1.4 1.3-4A3.4 3.4 0 0 1 16 11.2Z" fill="#fff"/><circle cx="16" cy="20.6" r="1.5" fill="#fff"/></svg>
+      Frigate&nbsp;Notify&nbsp;<span class="plus">Plus</span>
+    </a>
+    <nav class="top">
+      <a href="../../index.html#features">功能</a>
+      <a href="../../index.html#screenshots">截图</a>
+      <a href="../../index.html#install">安装</a>
+      <a href="index.html" class="current" aria-current="page">文档</a>
+      <span class="langpill" role="group" aria-label="Language">
+        <a href="../changelog.html" class="active" onclick="try{localStorage.setItem('fnp-site-lang','zh')}catch(e){}">&#20013;&#25991;</a>
+        <a href="../changelog.html" onclick="try{localStorage.setItem('fnp-site-lang','en')}catch(e){}">EN</a>
+      </span>
+      <a class="btn btn-primary btn-sm keep" href="https://github.com/izerok/frigate-notify-plus" style="color:#fff">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs-wrap">
+  <aside class="side"><nav class="sidenav" aria-label="Documentation"><a href="index.html">首页</a><a href="install.html">安装</a><div class="side-group">配置</div><a href="config/index.html">概览</a><a href="config/file.html">配置文件</a><a href="config/options.html">配置选项</a><a href="config/profilesandfilters.html">通知档案与过滤</a><a href="config/templates.html">模板</a><a href="config/sample.html">示例配置</a><a href="api.html">API</a><a class="active" href="changelog.html">更新日志</a></nav></aside>
+  <main>
+    <div class="pillstrip" aria-label="Documentation pages"><a href="index.html">首页</a><a href="install.html">安装</a><a href="config/index.html">概览</a><a href="config/file.html">配置文件</a><a href="config/options.html">配置选项</a><a href="config/profilesandfilters.html">通知档案与过滤</a><a href="config/templates.html">模板</a><a href="config/sample.html">示例配置</a><a href="api.html">API</a><a class="active" href="changelog.html">更新日志</a></div>
+    <div class="crumbs"><a href="index.html">文档</a><span class="sep">/</span><span class="here">更新日志</span></div>
+    <article class="article">
+<h1 id="changelog">更新日志</h1>
+<h2 id="v011-nov-26-2026"><a href="https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.1">v0.1.1</a> - 2026 年 11 月 26 日</h2>
+<ul>
+<li>为定时 GenAI 总结新增聊天摘要：Frigate 的 chat 接口把窗口内的事件编排成一份按时间顺序排列的摘要，每个定时计划可携带自定义提示词，并有一套回退阶梯（chat -&gt; 窗口内有被标记事项时改用 summarize -&gt; 逐事件列表 -&gt; “无活动”一行）确保摘要一定能送达</li>
+<li>修复 chat 请求绕过共享 Frigate HTTP 约定的问题：现在改走 <code>util.HTTPPostFrigate</code>，带登录会话并支持 <code>ignoressl</code>，因此在 Frigate 开启鉴权或 Frigate 使用自签名 HTTPS 证书时，摘要也能正常工作</li>
+<li>修复一次运行缓慢的总结会把相邻定时计划吞掉一整天的问题：到期的计划现在在派发时即标记为已触发，且每个计划在各自的 goroutine 中运行</li>
+<li>修复 Frigate 那句现成的 “maximum tool call iterations” 回复被当作摘要送达的问题：带 <code>finish_reason=length</code> 的 chat 响应现在按失败处理并走回退</li>
+<li>修复通知发送并发时通知状态计数器的竞态（计数器现由互斥锁保护）</li>
+</ul>
+<h2 id="v010-nov-25-2026"><a href="https://github.com/izerok/frigate-notify-plus/releases/tag/v0.1.0">v0.1.0</a> - 2026 年 11 月 25 日</h2>
+<ul>
+<li>本 fork 自有版本线上的首个版本：Frigate Notify Plus 不再跟随上游 frigate-notify 的版本号——<code>v0.5.4-webui.*</code> 预发布系列止于 <code>v0.5.4-webui.15</code>，应用现在自报版本为 <code>v0.1.0</code></li>
+<li>重新设计 Web UI 控制台：侧边栏外壳，常驻状态摘要、基于 hash 的深层链接（<code>#/status</code>、<code>#/config/&lt;section&gt;</code> 等）、状态仪表盘、带改动计数和保存差异预览的悬浮保存坞，以及标签页式模板编辑器</li>
+<li>新的默认 Web UI 配色：更明亮的蓝色设计体系取代了之前的浅色主题；深色、护眼绿和 Argon 主题仍然可用</li>
+<li>Web UI 现已双语：侧边栏中的 中文 / English 切换器可就地切换全部界面文字（选择保存在浏览器中，默认中文）</li>
+<li>修复状态页的通知磁贴在真实通知状态加载完成前短暂显示为“开”的问题；现在它会显示加载状态，直到状态已知</li>
+<li>修复 GenAI 与威胁优先级配置卡片的“已修改”徽标亮错区块的问题，并让这些卡片的恢复默认按钮只作用于各自的设置</li>
+<li>精简双语 README（347 → 90 行）并加入 Web UI 截图</li>
+<li>项目更名为 Frigate Notify Plus（<code>github.com/izerok/frigate-notify-plus</code>，二进制/镜像名 <code>frigate-notify-plus</code>）；Web UI 控制台、GenAI 通知、按相机冷却、路由规则、威胁优先级、按相机静音、Bark 渠道、GenAI 升级、每小时通知上限和定时 GenAI 总结都是 fork 功能——见 <a href="https://github.com/izerok/frigate-notify-plus/blob/main/README.md">README</a></li>
+<li>新增先发送快照、再通过 <a href="config/file.html#telegram">Telegram</a> 把同一条消息就地替换为事件视频片段的能力（<code>send_clip_after_snapshot</code>），并可通过 <code>clip_max_size</code> 配置上传大小上限</li>
+<li>新增在上传前用 ffmpeg 把 <a href="config/file.html#telegram">Telegram</a> 视频片段重新编码为更小视频的选项（<code>clip_transcode</code>），可选择通过 VAAPI 使用 GPU。Docker 镜像现已基于 Alpine 并包含 ffmpeg</li>
+<li>Frigate 0.18 支持：威胁等级现在渲染为 "Normal"、"Suspicious" 或 "Critical"，与 Frigate 的 0-2 量表一致（此前为 "Minor"/"Moderate"/"High"）</li>
+<li>新增 <code>.Extra.GenAIObservations</code> 模板变量（Frigate 0.18+），并将其作为时间线附加到 Telegram GenAI 更新中；默认 webhook 载荷中也包含它</li>
+<li>当 GenAI 活动总结请求被拒绝时，带上 Frigate 的错误信息</li>
+<li>修复 GenAI 活动总结带着 Frigate 的 “No activity/concerns were found” 占位文字发送的问题；现在只有当该时段内有审查被 GenAI 标记时才请求总结</li>
+<li>修复初始通知已被丢弃的审查仍会发送 GenAI 更新通知的问题（例如关闭了 <code>notify_detections</code> 的仅检测审查，或被区域/标签/相机过滤掉的审查）</li>
+<li>修复当 GenAI 更新在初始通知仍在发送过程中到达时，Telegram 通知重复、且 GenAI 说明文字被片段替换撤销的问题；更新现在会等待该通知发送完成后再编辑它</li>
+<li>在 <code>reviews</code> 模式下，被跟踪对象现在每个区域只通知一次，即使它出现在多个 Frigate 审查中，直到它有 1 小时没有在新区域上通知过（此前每个新审查都可能再次通知）</li>
+<li>在 <code>reviews</code> 模式下，已经通知过的对象（按其区域，或在 <code>notify_once</code> 下整体）不再阻止同一审查中的新对象通知；通知会为新对象发送</li>
+<li>在 <code>reviews</code> 模式下，被过滤丢弃的对象（例如静默时段或 <code>min_score</code>）在通过过滤后仍可通知；此前它的区域已被计为已通知</li>
+</ul>
+    </article>
+    <div class="prevnext"><a class="pn-card prev" href="api.html"><span class="pn-cap">&larr; 上一页</span><span class="pn-name">API</span></a><span></span></div>
+  </main>
+  <aside class="toc"><div class="toc-box"><div class="toc-title">本页目录</div><a class="lvl2" href="#v011-nov-26-2026">v0.1.1 - 2026 年 11 月 26 日</a><a class="lvl2" href="#v010-nov-25-2026">v0.1.0 - 2026 年 11 月 25 日</a></div></aside>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="../../index.html">
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2563eb"/><path d="M16 6.5 8 9.3v6.1c0 5 3.4 8.6 8 10.1 4.6-1.5 8-5.1 8-10.1V9.3L16 6.5Z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 11.2a3.4 3.4 0 0 1 3.4 3.4c0 2.6.8 3.4 1.3 4H11.3c.5-.6 1.3-1.4 1.3-4A3.4 3.4 0 0 1 16 11.2Z" fill="#fff"/><circle cx="16" cy="20.6" r="1.5" fill="#fff"/></svg>
+        Frigate&nbsp;Notify&nbsp;<span class="plus" style="color:#60a5fa">Plus</span>
+      </a>
+      <div class="foot-links">
+        <a href="index.html">文档</a>
+        <a href="https://github.com/izerok/frigate-notify-plus">GitHub</a>
+        <a href="https://github.com/izerok/frigate-notify-plus/releases">版本发布</a>
+      </div>
+    </div>
+    <div class="foot-meta">
+      Frigate Notify Plus 以 MIT 许可证发布。<br>
+      基于 <a href="https://github.com/0x2142/frigate-notify">0x2142/frigate-notify</a> 构建，配合 <a href="https://frigate.video">Frigate NVR</a> 使用。与 Frigate 项目无隶属关系。
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

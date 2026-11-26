@@ -1,0 +1,1789 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Config File — Frigate Notify Plus Docs</title>
+<meta name="description" content="Documentation for Frigate Notify Plus — Frigate notifications with GenAI summaries and a full Web UI.">
+<style>
+  :root{
+    --blue:#2563eb; --blue-dark:#1d4ed8; --blue-soft:#eff6ff;
+    --ink:#0f172a; --muted:#64748b; --faint:#94a3b8;
+    --bg:#f8fafc; --surface:#ffffff; --border:#e2e8f0;
+    --radius:12px;
+    --shadow-lg:0 24px 60px -12px rgba(15,23,42,.18), 0 4px 16px rgba(15,23,42,.06);
+    --shadow-sm:0 1px 2px rgba(15,23,42,.05), 0 4px 14px rgba(15,23,42,.05);
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Liberation Sans","PingFang SC","Microsoft YaHei","Noto Sans CJK SC","Source Han Sans SC","Helvetica Neue",Arial,sans-serif;
+    color:var(--ink); background:var(--bg); line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--blue);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+
+  /* ---------- top bar (same as landing) ---------- */
+  header.site{
+    position:sticky;top:0;z-index:50;
+    background:rgba(255,255,255,.92);backdrop-filter:blur(10px);
+    border-bottom:1px solid var(--border);
+  }
+  .bar{display:flex;align-items:center;gap:28px;height:64px;max-width:1360px;margin:0 auto;padding:0 24px}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;color:var(--ink);white-space:nowrap}
+  .brand:hover{text-decoration:none}
+  .brand .plus{color:var(--blue)}
+  nav.top{display:flex;gap:26px;margin-left:auto;align-items:center}
+  nav.top a{color:#334155;font-size:15px;font-weight:500}
+  nav.top a:hover{color:var(--blue);text-decoration:none}
+  nav.top a.current{color:var(--blue);font-weight:600;box-shadow:inset 0 -2px 0 var(--blue);padding:4px 0}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:15px;font-weight:600;border-radius:10px;
+    padding:10px 18px;border:1px solid transparent;cursor:pointer;
+    transition:background .15s ease,border-color .15s ease;
+  }
+  .btn:hover{text-decoration:none}
+  .btn-primary{background:var(--blue);color:#fff}
+  .btn-primary:hover{background:var(--blue-dark)}
+  .btn-sm{padding:8px 14px;font-size:14px}
+  .langpill{display:flex;gap:2px;padding:3px;border-radius:999px;background:#f1f5f9;border:1px solid var(--border)}
+  .langpill button{
+    font:inherit;font-size:13.5px;font-weight:600;line-height:1.35;
+    border:none;background:transparent;color:#64748b;
+    padding:4px 13px;border-radius:999px;cursor:pointer;white-space:nowrap;
+  }
+  .langpill button.active{background:var(--blue);color:#fff}
+
+  /* ---------- docs layout ---------- */
+  .docs-wrap{max-width:1360px;margin:0 auto;padding:34px 24px 72px;
+    display:grid;grid-template-columns:236px minmax(0,1fr) 224px;gap:36px;align-items:start}
+  .side{position:sticky;top:92px}
+  .sidenav{display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 116px);overflow-y:auto;padding-right:4px}
+  .sidenav a{
+    color:#334155;font-size:14.5px;font-weight:500;line-height:1.4;
+    padding:7px 12px;border-radius:8px;border-left:3px solid transparent;
+  }
+  .sidenav a:hover{background:#eef2f7;color:var(--ink);text-decoration:none}
+  .sidenav a.active{background:var(--blue-soft);color:var(--blue-dark);font-weight:600;border-left-color:var(--blue)}
+  .side-group{
+    margin:16px 0 6px;padding:0 12px;
+    font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);
+  }
+  .side-group:first-child{margin-top:0}
+
+  /* mobile pill strip (hidden on desktop) */
+  .pillstrip{display:none}
+
+  .crumbs{font-size:13.5px;color:var(--faint);margin-bottom:14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .crumbs a{color:var(--muted);font-weight:500}
+  .crumbs a:hover{color:var(--blue)}
+  .crumbs .sep{color:#cbd5e1}
+  .crumbs .here{color:var(--ink);font-weight:600}
+
+  .article{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    box-shadow:var(--shadow-sm);padding:42px 46px 38px;min-width:0;
+  }
+
+  /* ---------- article typography ---------- */
+  .article h1{font-size:33px;font-weight:800;letter-spacing:-.015em;line-height:1.2;margin-bottom:18px}
+  .article h2{font-size:23px;font-weight:750;letter-spacing:-.01em;line-height:1.3;
+    margin:42px 0 14px;padding-top:30px;border-top:1px solid var(--border)}
+  .article h1 + h2{margin-top:30px;padding-top:26px}
+  .article h3{font-size:18.5px;font-weight:700;margin:30px 0 10px}
+  .article h4{font-size:16px;font-weight:700;margin:24px 0 8px}
+  .article p{font-size:15.5px;line-height:1.75;color:#1e293b;margin:0 0 14px}
+  .article ul,.article ol{margin:0 0 14px;padding-left:24px;font-size:15.5px;line-height:1.7;color:#1e293b}
+  .article li{margin:5px 0}
+  .article li > ul,.article li > ol{margin:5px 0 2px}
+  .article strong{color:var(--ink)}
+  .article hr{border:none;border-top:1px solid var(--border);margin:30px 0}
+  .article img{max-width:100%;height:auto;border-radius:8px}
+  .article blockquote{border-left:3px solid #dbeafe;background:var(--blue-soft);
+    padding:12px 18px;border-radius:0 10px 10px 0;margin:0 0 16px}
+  .article blockquote p{margin:0}
+
+  .article code{
+    font-family:var(--mono);font-size:.86em;
+    background:#f1f5f9;border:1px solid var(--border);border-radius:6px;
+    padding:1px 6px;color:var(--ink);
+    overflow-wrap:anywhere;
+  }
+  main{min-width:0}
+  /* code blocks: light slate, filename strip + copy chip */
+  .article .highlight{
+    position:relative;background:#f8fafc;border:1px solid var(--border);
+    border-radius:var(--radius);margin:0 0 20px;overflow:hidden;
+  }
+  .article .highlight .filename{
+    display:block;background:#eef2f7;border-bottom:1px solid var(--border);
+    font-family:var(--mono);font-size:12.5px;color:var(--muted);
+    padding:8px 16px;
+  }
+  .article .highlight::after{
+    content:"Copy";position:absolute;top:7px;right:10px;
+    font-size:11.5px;font-weight:600;color:var(--muted);
+    background:#fff;border:1px solid var(--border);border-radius:7px;padding:3px 9px;
+  }
+  .article .highlight pre{
+    padding:17px 20px;overflow-x:auto;background:transparent;
+    font-family:var(--mono);font-size:13px;line-height:1.7;white-space:pre;
+  }
+  .article .highlight pre code{background:none;border:none;padding:0;white-space:pre;font-size:13px}
+  .article .highlight .c,.article .highlight .c1,.article .highlight .cm{color:#94a3b8;font-style:italic}
+  .article .highlight .nt{color:var(--blue-dark)}
+  .article .highlight .s,.article .highlight .s1,.article .highlight .s2{color:#047857}
+  .article .highlight .k,.article .highlight .kd,.article .highlight .kn{color:#6d28d9}
+  .article .highlight .p{color:#64748b}
+  .article .highlight .err{background:none;color:inherit}
+
+  /* tables */
+  .article table{width:100%;border-collapse:collapse;margin:0 0 20px;font-size:14.5px;display:block;overflow-x:auto}
+  .article th{background:#f8fafc;font-weight:650;text-align:left;color:var(--ink)}
+  .article th,.article td{border:1px solid var(--border);padding:9px 13px;line-height:1.55;vertical-align:top}
+  .article tbody tr:nth-child(even){background:#fbfcfe}
+
+  /* callouts */
+  .article .admonition{
+    border-radius:var(--radius);padding:15px 19px 4px;margin:0 0 20px;
+    border:1px solid #dbeafe;background:var(--blue-soft);
+  }
+  .article .admonition .admonition-title{
+    font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--blue-dark);margin-bottom:8px;
+  }
+  .article .admonition p{font-size:15px}
+  .article .admonition.tip{border-color:#a7f3d0;background:#ecfdf5}
+  .article .admonition.tip .admonition-title{color:#047857}
+  .article .admonition.warning,.article .admonition.caution{border-color:#fde68a;background:#fffbeb}
+  .article .admonition.warning .admonition-title,.article .admonition.caution .admonition-title{color:#b45309}
+  .article .admonition.danger,.article .admonition.error{border-color:#fecaca;background:#fef2f2}
+  .article .admonition.danger .admonition-title,.article .admonition.error .admonition-title{color:#b91c1c}
+  .article details{
+    border:1px solid #dbeafe;background:var(--blue-soft);
+    border-radius:var(--radius);padding:14px 19px;margin:0 0 20px;
+  }
+  .article details summary{
+    font-size:12.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--blue-dark);cursor:pointer;margin-bottom:6px;
+  }
+  .article details p{font-size:15px}
+
+  /* prev / next */
+  .prevnext{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:34px}
+  .pn-card{
+    background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px 20px;display:flex;flex-direction:column;gap:3px;box-shadow:var(--shadow-sm);
+  }
+  .pn-card:hover{border-color:#bfdbfe;text-decoration:none}
+  .pn-card.next{text-align:right;align-items:flex-end}
+  .pn-cap{font-size:12.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--faint)}
+  .pn-name{font-size:16px;font-weight:650;color:var(--ink)}
+
+  /* ---------- on-this-page TOC ---------- */
+  .toc{position:sticky;top:92px}
+  .toc-box{border-left:2px solid var(--border);padding-left:16px;max-height:calc(100vh - 116px);overflow-y:auto}
+  .toc-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .toc a{display:block;font-size:13.5px;line-height:1.45;color:var(--muted);padding:3.5px 0}
+  .toc a:hover{color:var(--blue);text-decoration:none}
+  .toc a.lvl3{padding-left:14px;font-size:13px}
+
+  /* ---------- footer (same as landing) ---------- */
+  footer{background:#0f172a;color:#94a3b8;padding:56px 0 40px}
+  .foot{display:flex;gap:40px;flex-wrap:wrap;justify-content:space-between;align-items:flex-start}
+  .foot .brand{color:#fff}
+  .foot-links{display:flex;gap:28px}
+  .foot-links a{color:#cbd5e1;font-size:15px;font-weight:500}
+  .foot-links a:hover{color:#fff}
+  .foot-meta{margin-top:34px;padding-top:22px;border-top:1px solid #1e293b;font-size:13.5px;color:#64748b;line-height:1.7}
+  .foot-meta a{color:#94a3b8;text-decoration:underline}
+
+  /* ---------- responsive ---------- */
+  @media (max-width:1180px){
+    .docs-wrap{grid-template-columns:236px minmax(0,1fr)}
+    .toc{display:none}
+  }
+  @media (max-width:880px){
+    .docs-wrap{grid-template-columns:minmax(0,1fr);padding-top:0;gap:22px}
+    .side{display:none}
+    .pillstrip{
+      display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
+      position:sticky;top:64px;z-index:40;
+      background:rgba(248,250,252,.94);backdrop-filter:blur(10px);
+      margin:0 -24px;padding:12px 24px;border-bottom:1px solid var(--border);
+    }
+    .pillstrip::-webkit-scrollbar{display:none}
+    .pillstrip a{
+      flex:0 0 auto;font-size:13.5px;font-weight:600;color:#475569;
+      background:#fff;border:1px solid var(--border);border-radius:999px;padding:6px 14px;
+    }
+    .pillstrip a:hover{text-decoration:none;border-color:#cbd5e1}
+    .pillstrip a.active{background:var(--blue);border-color:var(--blue);color:#fff}
+    .article{padding:28px 22px 26px}
+    .article h1{font-size:27px}
+    .prevnext{grid-template-columns:1fr}
+    .pn-card.next{text-align:left;align-items:flex-start}
+  }
+  @media (max-width:760px){
+    nav.top a:not(.keep){display:none}
+    nav.top{gap:14px}
+  }
+  @media (max-width:560px){
+    .bar{gap:12px}
+    .brand{font-size:16px}
+    .bar .btn{display:none}
+    .langpill button{padding:4px 11px}
+  }
+
+  .langpill a{font-size:13.5px;font-weight:600;line-height:1.35;color:#64748b;padding:4px 13px;border-radius:999px;white-space:nowrap}
+  .langpill a:hover{text-decoration:none;color:var(--blue)}
+  .langpill a.active{background:var(--blue);color:#fff}
+  @media (max-width:560px){.langpill a{padding:4px 11px}}
+</style>
+</head>
+<body>
+
+<header class="site">
+  <div class="bar">
+    <a class="brand" href="../../index.html">
+      <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2563eb"/><path d="M16 6.5 8 9.3v6.1c0 5 3.4 8.6 8 10.1 4.6-1.5 8-5.1 8-10.1V9.3L16 6.5Z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 11.2a3.4 3.4 0 0 1 3.4 3.4c0 2.6.8 3.4 1.3 4H11.3c.5-.6 1.3-1.4 1.3-4A3.4 3.4 0 0 1 16 11.2Z" fill="#fff"/><circle cx="16" cy="20.6" r="1.5" fill="#fff"/></svg>
+      Frigate&nbsp;Notify&nbsp;<span class="plus">Plus</span>
+    </a>
+    <nav class="top">
+      <a href="../../index.html#features">Features</a>
+      <a href="../../index.html#screenshots">Screenshots</a>
+      <a href="../../index.html#install">Install</a>
+      <a href="../index.html" class="current" aria-current="page">Docs</a>
+      <span class="langpill" role="group" aria-label="Language">
+        <a href="../zh/config/file.html" onclick="try{localStorage.setItem('fnp-site-lang','zh')}catch(e){}">&#20013;&#25991;</a>
+        <a href="../zh/config/file.html" class="active" onclick="try{localStorage.setItem('fnp-site-lang','en')}catch(e){}">EN</a>
+      </span>
+      <a class="btn btn-primary btn-sm keep" href="https://github.com/izerok/frigate-notify-plus" style="color:#fff">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8Z"/></svg>
+        GitHub
+      </a>
+    </nav>
+  </div>
+</header>
+
+<div class="docs-wrap">
+  <aside class="side"><nav class="sidenav" aria-label="Documentation"><a href="../index.html">Home</a><a href="../install.html">Install</a><div class="side-group">Config</div><a href="index.html">Overview</a><a class="active" href="file.html">Config File</a><a href="options.html">Config Options</a><a href="profilesandfilters.html">Alert Profiles &amp; Filters</a><a href="templates.html">Templates</a><a href="sample.html">Sample Config</a><a href="../api.html">API</a><a href="../changelog.html">Changelog</a></nav></aside>
+  <main>
+    <div class="pillstrip" aria-label="Documentation pages"><a href="../index.html">Home</a><a href="../install.html">Install</a><a href="index.html">Overview</a><a class="active" href="file.html">Config File</a><a href="options.html">Config Options</a><a href="profilesandfilters.html">Alert Profiles &amp; Filters</a><a href="templates.html">Templates</a><a href="sample.html">Sample Config</a><a href="../api.html">API</a><a href="../changelog.html">Changelog</a></div>
+    <div class="crumbs"><a href="../index.html">Docs</a><span class="sep">/</span><a href="index.html">Config</a><span class="sep">/</span><span class="here">Config File</span></div>
+    <article class="article">
+<h1 id="config-file">Config File</h1>
+<p>The following section details options available via the <code>config.yml</code> file. Config snippets are provided for each section, however it is recommended to start with a blank copy of the full <a href="sample.html">sample config</a>.</p>
+<p>Config may also be provided via environment variables. Frigate-notify will load environment variables prefixed with <code>FN_</code>. Environment variables follow the same structure as the config file below, with heirarchy separated by two underscores (<code>__</code>). For example, setting the Frigate server address would be <code>FN_FRIGATE__SERVER</code>, or enabling Discord alerts would use <code>FN_ALERTS__DISCORD__ENABLED</code>. If multiple alert profiles are configured, they are specified by index starting at zero - for example: <code>FN_ALERTS__DISCORD__0__ENABLED</code>, <code>FN_ALERTS__DISCORD__1__ENABLED</code>, etc. Environment variable keys are shown alongside config file keys below.</p>
+<p>Config is loaded &amp; merged in the following order: Config file &gt; Environment Variables &gt; Docker secrets . This allows most configuration to be provided via config file, but provide secrets via environment variables or docker secrets.</p>
+<h2 id="config-file-location">Config file location</h2>
+<p>The config file is resolved in this order:</p>
+<ol>
+<li>The <code>-c</code> flag (for example <code>-c /app/config.yml</code>)</li>
+<li>The <code>FN_CONFIGFILE</code> environment variable</li>
+<li><code>$DATA_DIR/config.yml</code> when a data directory is set (<code>-d</code> / <code>--data-dir</code> flag or the <code>FN_DATA_DIR</code> environment variable)</li>
+<li><code>./config.yml</code> in the working directory (legacy default)</li>
+</ol>
+<p>The Docker image sets <code>FN_DATA_DIR=/data</code>, so in a container the config file is <code>/data/config.yml</code> by default. Mount a host directory on <code>/data</code> to persist it: the data directory also holds <code>logs/frigate-notify.log</code> (rotated at 10 MB, 5 backups kept), <code>mute.json</code> (per-camera mutes), <code>templates/</code> (message templates edited in the Web UI, one file per template), and <code>history.jsonl</code> (recent-notification history: JSON Lines, one entry per line, newest 100 kept in memory, file compacts past 1000 lines). Deleting the container does not delete the data. Config backups written on save (<code>config.yml-&lt;timestamp&gt;.bak</code>) land in the data directory as well.</p>
+<h2 id="app">App</h2>
+<ul>
+<li><strong>mode</strong> (Optional - Default: <code>reviews</code>)<ul>
+<li>Env: <code>FN_APP__MODE</code></li>
+<li>Specify whether to notifications are based on Frigate <a href="https://docs.frigate.video/configuration/review/#review-items-vs-events">Events or Reviews</a></li>
+<li><code>events</code> will notify on every detected object from Frigate</li>
+<li><code>reviews</code> will only notify on Frigate <strong>Alerts</strong> (Requires Frigate 0.14+)<ul>
+<li>When in <code>reviews</code> mode, toggle <code>notify_detections</code> under the <code>alerts</code> <a href="#alerts">config section</a> to also notify on <strong>Detections</strong></li>
+<li>See also <a href="https://docs.frigate.video/configuration/review/#alerts-and-detections">Alerts vs Detections</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>API</strong><ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_APP__API__ENABLED</code></li>
+<li>Set to <code>true</code> to enable Frigate-Notify-Plus's REST API server</li>
+</ul>
+</li>
+<li><strong>port</strong> (Optional - Default: <code>8000</code>)<ul>
+<li>Env: <code>FN_APP__API__PORT</code></li>
+<li>Change default port for API server</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">app</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">events</span>
+<span class="w">  </span><span class="nt">api</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8000</span>
+</code></pre></div>
+<h2 id="frigate">Frigate</h2>
+<h3 id="server">Server</h3>
+<ul>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_FRIGATE__SERVER</code></li>
+<li>IP, hostname, or URL of the Frigate NVR</li>
+<li>If IP or hostname specified, app will prepend <code>http://</code></li>
+<li>If Frigate is not behind a reverse proxy, append port number if necessary</li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_FRIGATE__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates for <code>server</code></li>
+</ul>
+</li>
+<li><strong>public_url</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__PUBLIC_URL</code></li>
+<li>Should be set if Frigate is available via an external, public URL</li>
+<li>This value is used for the links used in notifications</li>
+<li>Format should be full URL (example: <code>https://nvr.your.public.domain.tld</code>)</li>
+</ul>
+</li>
+<li><strong>username</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__USERNAME</code></li>
+<li>Frigate username to log in with, if using authenticated UI on port 8971</li>
+<li>If username is configured, password must also be configured</li>
+<li>Recommended to create a unique user for frigate-notify-plus with <strong>viewer</strong> role</li>
+</ul>
+</li>
+<li><strong>password</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__PASSWORD</code></li>
+<li>Frigate password to log in with, if using authenticated UI on port 8971</li>
+<li>If password is configured, username must also be configured</li>
+</ul>
+</li>
+<li><strong>headers</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__HEADERS</code></li>
+<li>Send additional HTTP headers to Frigate</li>
+<li>Useful for things like authentication</li>
+<li>Header format: <code>Header: Value</code></li>
+<li>Example: <code>Authorization: Basic abcd1234</code></li>
+</ul>
+</li>
+<li><strong>startup_check</strong> (Optional)<ul>
+<li>On startup, frigate-notify-plus will attempt to reach the configured Frigate NVR to validate connectivity</li>
+<li>These options allow customization of the max attempts &amp; retry interval</li>
+<li><strong>attempts</strong> (Optional - Default: <code>5</code>)<ul>
+<li>Env: <code>FN_FRIGATE__STARTUP_CHECK__ATTEMPTS</code></li>
+<li>Max number of attempts to reach Frigate server</li>
+</ul>
+</li>
+<li><strong>interval</strong> (Optional - Default: <code>30</code>)<ul>
+<li>Env: <code>FN_FRIGATE__STARTUP_CHECK__INTERVAL</code></li>
+<li>Interval between retries, in seconds</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">frigate</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nvr.your.domain.tld</span>
+<span class="w">  </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">public_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://nvr.your.public.domain.tld</span>
+<span class="w">  </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">Authorization</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Basic abcd1234</span>
+<span class="w">  </span><span class="nt">startup_check</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">attempts</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">    </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+</code></pre></div>
+<h3 id="webapi">WebAPI</h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only one monitoring method can be configured, either <code>webapi</code> or <code>mqtt</code>. The other must be set to <code>enabled: false</code>.</p>
+</div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_FRIGATE__WEBAPI__ENABLED</code></li>
+<li>If set to <code>true</code>, Frigate events are collected by polling the web API</li>
+</ul>
+</li>
+<li><strong>interval</strong> (Optional - Default: <code>30</code>)<ul>
+<li>Env: <code>FN_FRIGATE__WEBAPI__INTERVAL</code></li>
+<li>How frequently to check the Frigate web API for new events, in seconds</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">frigate</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">webapi</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60</span>
+</code></pre></div>
+<h3 id="mqtt">MQTT</h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Only one monitoring method can be configured, either <code>webapi</code> or <code>mqtt</code>. The other must be set to <code>enabled: false</code>.</p>
+</div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__ENABLED</code></li>
+<li>If set to <code>true</code>, Frigate events are collected via an MQTT broker</li>
+<li>Note: This must be the same MQTT broker that Frigate is sending events to</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__SERVER</code></li>
+<li>IP or hostname of the MQTT server</li>
+<li>If MQTT monitoring is enabled, this field is required</li>
+</ul>
+</li>
+<li><strong>port</strong> (Optiona - Default: <code>1883</code>)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__PORT</code></li>
+<li>MQTT service port</li>
+</ul>
+</li>
+<li><strong>clientid</strong> (Optional - Default: <code>frigate-notify-plus</code>)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__CLIENTID</code></li>
+<li>Client ID of this app used when connecting to MQTT</li>
+<li>Note: This must be a unique value &amp; cannot be shared with other MQTT clients</li>
+</ul>
+</li>
+<li><strong>username</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__USERNAME</code></li>
+<li>MQTT username</li>
+<li>If username &amp; password are not set, then authentication is disabled</li>
+</ul>
+</li>
+<li><strong>password</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__PASSWORD</code></li>
+<li>MQTT password</li>
+<li>Required if <code>username</code> is set</li>
+</ul>
+</li>
+<li><strong>topic_prefix</strong> (Optional - Default: <code>frigate</code>)<ul>
+<li>Env: <code>FN_FRIGATE__MQTT__TOPIC_PREFIX</code></li>
+<li>Optionally change MQTT topic prefix</li>
+<li>This should match the topic prefix used by Frigate</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">frigate</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">mqtt</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mqtt.your.domain.tld</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1883</span>
+<span class="w">    </span><span class="nt">clientid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate-notify-plus</span>
+<span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mqtt-user</span>
+<span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mqtt-pass</span>
+<span class="w">    </span><span class="nt">topic_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate</span>
+</code></pre></div>
+<h3 id="cameras">Cameras</h3>
+<ul>
+<li><strong>exclude</strong> (Optional)<ul>
+<li>Env: <code>FN_FRIGATE__CAMERAS__EXCLUDE</code></li>
+<li>If desired, provide a list of cameras to ignore</li>
+<li>Any Frigate events on these cameras will not generate alerts</li>
+<li>If left empty, this is disabled &amp; all cameras will generate alerts</li>
+<li>If configuring via environment variable, separate camera names by semicolon</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">frigate</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cameras</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">exclude</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_cam_01</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_cam_02</span>
+</code></pre></div>
+<h2 id="alerts">Alerts</h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Any combination of alerting methods may be enabled, though you'll probably want to enable at least one! 😅</p>
+</div>
+<p>All alert providers (Discord, Gotify, etc) also support optional filters &amp; the ability to configure multiple profiles per provider. Please see <a href="profilesandfilters.html">Alert Profiles &amp; Filters</a> for more information.</p>
+<h3 id="general">General</h3>
+<ul>
+<li><strong>cooldown</strong> (Optional - Default: <code>0</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__COOLDOWN</code></li>
+<li>Minimum seconds between notifications from any camera. Must be a non-negative integer; <code>0</code> disables the global cooldown.</li>
+</ul>
+</li>
+<li><strong>camera_cooldown</strong> (Optional - Default: <code>{}</code>)<ul>
+<li>Env example: <code>FN_ALERTS__GENERAL__CAMERA_COOLDOWN__DOORBELL=30</code></li>
+<li>Map Frigate camera names to cooldowns in seconds (non-negative integers)</li>
+<li>Omitted cameras and values of <code>0</code> have no camera-specific cooldown</li>
+<li>Both the global and camera cooldowns must elapse before another notification is sent</li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional - Default: <code>Frigate Alert</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__TITLE</code></li>
+<li>Title of alert messages that are generated (Email subject, etc)</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>timeformat</strong> (Optional - Default: <code>2006-01-02 15:04:05 -0700 MST</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__TIMEFORMAT</code></li>
+<li>Optionally set a custom date/time format for notifications</li>
+<li>This utilizes Golang's <a href="https://go.dev/src/time/format.go">reference time</a> for formatting</li>
+<li>See <a href="https://www.geeksforgeeks.org/time-formatting-in-golang">this</a> guide for help</li>
+<li>Example below uses RFC1123 format</li>
+</ul>
+</li>
+<li><strong>nosnap</strong> (Optional - Default: <code>allow</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__NOSNAP</code></li>
+<li>Specify what to do with events that have no snapshot image</li>
+<li>By default, these events will be sent &amp; notification message will say "No snapshot available"</li>
+<li>Set to <code>drop</code> to silently drop these events &amp; not send notifications</li>
+</ul>
+</li>
+<li><strong>snap_bbox</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__SNAP_BBOX</code></li>
+<li>Includes object bounding box on snapshot when retrieved from Frigate</li>
+<li>Note: On Frigate 0.17 and older this is only applied while the event is in progress. Frigate 0.18+ renders the snapshot on request, so it applies to completed events as well; when left <code>false</code>, Frigate falls back to the camera's own <code>snapshots</code> config</li>
+</ul>
+</li>
+<li><strong>snap_timestamp</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__SNAP_TIMESTAMP</code></li>
+<li>Includes timestamp on snapshot when retrieved from Frigate</li>
+<li>Note: Same Frigate version behaviour as <code>snap_bbox</code></li>
+</ul>
+</li>
+<li><strong>snap_crop</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__SNAP_CROP</code></li>
+<li>Crops snapshot when retrieved from Frigate</li>
+<li>Note: Same Frigate version behaviour as <code>snap_bbox</code></li>
+</ul>
+</li>
+<li><strong>snap_hires</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__SNAP_HIRES</code></li>
+<li>By default, snapshots are collected from Frigate detect stream which may be lower resolution</li>
+<li>Set this to <code>true</code> to collect snapshot from camera recording stream</li>
+<li><strong>Note</strong>: If enabled, the above settings for <code>snap_bbox</code>, <code>snap_timestamp</code>, and <code>snap_crop</code> settings have no effect</li>
+<li><strong>Note</strong>: Snapshot generated via this method is based on the event start time provided by Frigate<ul>
+<li>This means that the snapshot collected may differ from the snapshot Frigate choses to use for the event</li>
+<li>This may also mean that, depending on the timing of the detection, this snapshot <em>may</em> not include the detected object</li>
+<li>If it is a priority to ensure that snapshots always include the detected object, then it is recommended to leave this option disabled</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><strong>max_snap_retry</strong> (Optional - Default: <code>10</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__MAX_SNAP_RETRY</code></li>
+<li>Max number of retry attempts when waiting for snapshot to become available</li>
+<li>Retries are every 2 seconds</li>
+<li>Default is 10, which means waiting up to 20 seconds for snapshot</li>
+<li>Note: Does not apply if event received from Frigate contains <code>has_snapshot: false</code></li>
+</ul>
+</li>
+<li><strong>notify_once</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__NOTIFY_ONCE</code></li>
+<li>By default, each Frigate event may generate several notifications as the object changes zones, etc</li>
+<li>Set this to <code>true</code> to only notify once per event</li>
+</ul>
+</li>
+<li><strong>notify_detections</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__NOTIFY_DETECTIONS</code></li>
+<li>Only used when app <code>mode</code> is <code>reviews</code></li>
+<li>By default, notifications will only be sent on Frigate alerts</li>
+<li>Set to <code>true</code> to also enable on detections</li>
+</ul>
+</li>
+<li><strong>recheck_delay</strong> (Optional - Default: <code>0</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__RECHECK_DELAY</code></li>
+<li>Optionally re-check event details from Frigate before sending notifications</li>
+<li>Delay period in seconds</li>
+<li>If set to <code>0</code>, events are sent immediately upon receipt from Frigate</li>
+<li>This setting can be useful if needing to wait for a 3rd-party app to set sub_labels</li>
+</ul>
+</li>
+<li><strong>audio_only</strong> (Optional - Default: <code>allow</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__AUDIO_ONLY</code></li>
+<li>Specify what to do with events that only contain audio detection</li>
+<li>By default, these events will generate notifications</li>
+<li>Set to <code>drop</code> to silently drop these events &amp; not send notifications</li>
+</ul>
+</li>
+<li><strong>max_notifications_per_hour</strong> (Optional - Default: <code>0</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__MAX_NOTIFICATIONS_PER_HOUR</code></li>
+<li>Maximum number of alerts dispatched per rolling hour, across all providers</li>
+<li>Set to <code>0</code> for unlimited</li>
+<li>Only alerts that are actually dispatched count — filtered, muted, and cooldown-blocked alerts do not count, and test alerts are exempt</li>
+<li>GenAI updates and escalation alerts do count toward the cap</li>
+</ul>
+</li>
+<li><strong>genai</strong> (Optional)<ul>
+<li>Settings for Frigate's <a href="https://docs.frigate.video/configuration/genai/">GenAI</a> feature support</li>
+<li>When Frigate has GenAI configured, it generates AI descriptions for review events including a title, scene summary, threat level, and object descriptions</li>
+<li>These are automatically included in notifications when available</li>
+<li><strong>enabled</strong> (Optional - Default: <code>true</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__GENAI__ENABLED</code></li>
+<li>Set to <code>false</code> to exclude GenAI data from notifications</li>
+<li>When enabled, notifications will include AI-generated title, summary, threat level, and other GenAI metadata when available from Frigate</li>
+</ul>
+</li>
+<li><strong>update_notif</strong> (Optional - Default: <code>true</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__GENAI__UPDATE_NOTIF</code></li>
+<li>GenAI data may arrive after the initial notification has already been sent</li>
+<li>Set to <code>true</code> to send an updated notification when GenAI data becomes available</li>
+<li>Updates are only sent for reviews that produced an initial notification</li>
+<li>If the initial notification is still being sent (e.g. waiting for the snapshot or clip), the update waits for it to finish and then edits it</li>
+<li>Set to <code>false</code> to only include GenAI data if it is available at the time of the initial notification</li>
+</ul>
+</li>
+<li><strong>summary_idle_time</strong> (Optional - Default: <code>300</code>)<ul>
+<li>Env: <code>FN_ALERTS__GENERAL__GENAI__SUMMARY_IDLE_TIME</code></li>
+<li>After a burst of activity, when no new notifications have been sent for this many seconds, request a GenAI activity summary from Frigate</li>
+<li>The summary covers all events across all cameras during the activity period</li>
+<li>A summary is only sent when at least one review in that period was flagged by GenAI with a threat level above normal or other concerns; routine activity produces no summary</li>
+<li>Requires Frigate to have a GenAI provider configured (on Frigate 0.18+, a provider with the <code>descriptions</code> role)</li>
+<li>On Frigate 0.18+ the summary endpoint requires access to every camera, so the Frigate user configured under <code>frigate</code> must be an admin, a viewer, or a custom role covering all cameras</li>
+<li>Set to <code>0</code> to disable activity summaries</li>
+</ul>
+</li>
+<li><strong>schedules</strong> (Optional)<ul>
+<li>Request a GenAI summary from Frigate at fixed local times and send it as a notification</li>
+<li>Each schedule runs at most once per day; times use the container's local time (set <code>TZ</code> on the container to match your Frigate host)</li>
+<li><strong>time</strong> (Required) - Local time in <code>HH:MM</code> format, for example <code>20:00</code></li>
+<li><strong>window</strong> (Optional - Default: <code>today</code>) - Time window to summarize: <code>today</code> (midnight to run time) or <code>last_Nh</code> (N hours back, for example <code>last_11h</code> covers 20:00 to 07:00)</li>
+<li><strong>targets</strong> (Optional) - Provider profiles that receive the scheduled summary; if empty, every enabled provider receives it</li>
+<li><strong>enabled</strong> (Optional - Default: <code>true</code>) - Set to <code>false</code> to disable a schedule without removing it</li>
+<li>Each schedule can also be run on demand from the Web UI (status page, "立即执行")</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">general</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Frigate Alert</span>
+<span class="w">    </span><span class="nt">cooldown</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">    </span><span class="nt">camera_cooldown</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">doorbell</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30</span>
+<span class="w">    </span><span class="nt">timeformat</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Mon, 02 Jan 2006 15:04:05 MST</span>
+<span class="w">    </span><span class="nt">nosnap</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">snap_bbox</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">snap_timestamp</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">snap_crop</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">snap_hires</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_snap_retry</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">notify_once</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">notify_detections</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">audio_only</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">genai</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">update_notif</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">summary_idle_time</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">300</span>
+<span class="w">      </span><span class="nt">schedules</span><span class="p">:</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">time</span><span class="p">:</span><span class="w"> </span><span class="s">"20:00"</span>
+<span class="w">          </span><span class="nt">window</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">today</span>
+<span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">time</span><span class="p">:</span><span class="w"> </span><span class="s">"07:00"</span>
+<span class="w">          </span><span class="nt">window</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">last_11h</span>
+</code></pre></div>
+<h3 id="routing">Routing</h3>
+<p>Routing rules narrow each alert to selected provider profiles, and GenAI escalation rules send a fresh alert when a review is later upgraded to a higher threat level. Both are configured under <code>alerts.routing</code> and edited from the Web UI (config page, "路由规则").</p>
+<ul>
+<li><strong>rules</strong> (Optional)<ul>
+<li>A list of routing rules, evaluated in order; the targets of every matching rule are combined</li>
+<li>Each rule has a <code>name</code> and optional <code>cameras</code>, <code>labels</code>, <code>zones</code>, <code>sublabels</code> lists (OR within a list; an empty list matches everything) plus <code>min_threat</code> (0 Normal, 1 Suspicious, 2 Critical; <code>-1</code> matches any threat level, the default)</li>
+<li>An event with no GenAI data yet counts as threat level 0</li>
+<li><code>targets</code> is a list of <code>{provider, index}</code> pairs (<code>index: -1</code> selects all profiles of that provider)</li>
+<li>If no rule matches, the alert falls back to the previous behaviour (all enabled providers, subject to their filters)</li>
+</ul>
+</li>
+<li><strong>escalation</strong> (Optional)<ul>
+<li>GenAI data may arrive after the initial alert, when the event's threat level was still 0 — so a "critical goes everywhere" routing rule cannot fire on the initial alert. Escalation closes that gap</li>
+<li>Each rule has a <code>min_threat</code> (default <code>1</code>, Suspicious) and <code>targets</code></li>
+<li>When a GenAI update for an already-notified review reaches <code>min_threat</code>, a FRESH alert is sent to the rule targets, in addition to the caption edit on the originally notified channels</li>
+<li>Each (review, rule) pair fires at most once; a later update with a still-higher threat can fire a higher rule</li>
+<li>Escalation alerts bypass the cooldown but count toward <code>max_notifications_per_hour</code></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">routing</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">rules</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Front</span><span class="nv"> </span><span class="s">door</span><span class="nv"> </span><span class="s">suspicious</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">Telegram"</span>
+<span class="w">        </span><span class="nt">cameras</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">front_door</span>
+<span class="w">        </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">person</span>
+<span class="w">        </span><span class="nt">min_threat</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">targets</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">telegram</span>
+<span class="w">            </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">"Critical</span><span class="nv"> </span><span class="s">events</span><span class="nv"> </span><span class="s">everywhere"</span>
+<span class="w">        </span><span class="nt">min_threat</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">2</span>
+<span class="w">        </span><span class="nt">targets</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">telegram</span>
+<span class="w">            </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">webhook</span>
+<span class="w">            </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">escalation</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">min_threat</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1</span>
+<span class="w">        </span><span class="nt">targets</span><span class="p">:</span>
+<span class="w">          </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">provider</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">telegram</span>
+<span class="w">            </span><span class="nt">index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">-1</span>
+</code></pre></div>
+<h3 id="quiet-hours">Quiet Hours</h3>
+<p>Define a quiet period &amp; supress alerts during this time.</p>
+<ul>
+<li><strong>start</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__QUIET__START</code></li>
+<li>When quiet period begins, in 24-hour format</li>
+<li>Required if <code>end</code> is configured</li>
+</ul>
+</li>
+<li><strong>end</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__QUIET__END</code></li>
+<li>When quiet period ends, in 24-hour format</li>
+<li>Required if <code>start</code> is configured</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quiet</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">start</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">08:00</span>
+<span class="w">    </span><span class="nt">end</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">17:00</span>
+</code></pre></div>
+<h3 id="zones">Zones</h3>
+<p>This config section allows control over whether to generate alerts on all zones, or only specific ones. By default, the app will generate notifications on <strong>all</strong> Frigate events, regardless of whether the event includes zone info.</p>
+<details class="note">
+<summary>A note about how this works</summary>
+<p><strong>With MQTT</strong>, Frigate will send a <code>new</code> event when a detection starts. Subsequent changes, like the detected object transitioning from one zone to another, will trigger <code>update</code> events. These <code>update</code> events will contain a list of current zone(s) that the object is in, as well as a list of all zones that the object has entered during the event.</p>
+<p>In order to reduce the number of notifications generated, this app will only alert on the <em>first time</em> the detected object enters a zone.</p>
+<p>In <code>reviews</code> mode this holds for the lifetime of the tracked object, even when it spans several Frigate reviews: an object that already alerted on a zone does not alert on it again in a later review. The zones an object alerted on are remembered until it has gone 1 hour without alerting on a new zone. A review alerts when at least one of its objects is in a zone it has not alerted on yet, and the alert covers only those objects; objects that already alerted are left out instead of holding back the whole review.</p>
+<p>For example, let's say you have a camera in your front yard with zones for sidewalk, driveway, and lawn - but only allow notifications for driveway and lawn. During an event someone was detected originally on the sidewalk, then driveway, lawn, and back to driveway. In this case, you should only receive two notifications. Once for the first time the person entered the driveway zone, and a second when they entered the lawn zone. </p>
+<p><strong>With Web API event query</strong>, we only query the event from Frigate one time. So currently, only one alert would be sent depending on the detected zones at the time the web API was queried for new events.</p>
+</details>
+<ul>
+<li><strong>unzoned</strong> (Optional - Default: <code>allow</code>)<ul>
+<li>Env: <code>FN_ALERTS__ZONES__UNZONED</code></li>
+<li>Controls alerts on events outside a zone</li>
+<li>By default, events without a zone will generate alerts</li>
+<li>Set to <code>drop</code> to prevent generating alerts from events without a zone</li>
+</ul>
+</li>
+<li><strong>allow</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__ZONES__ALLOW</code></li>
+<li>Specify a list of zones to allow notifications</li>
+<li>All other zones will be ignored</li>
+<li>If <code>unzoned</code> is set to <code>allow</code>, notifications will still be sent on events without any zone info</li>
+<li>If configuring via environment variable, separate zone names by semicolon</li>
+</ul>
+</li>
+<li><strong>block</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__ZONES__BLOCK</code></li>
+<li>Specify a list of zones to always ignore</li>
+<li>This takes precedence over the <code>allow</code> list</li>
+<li>If configuring via environment variable, separate zone names by semicolon</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">zones</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">unzoned</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">allow</span>
+<span class="w">    </span><span class="nt">allow</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_zone_01</span>
+<span class="w">    </span><span class="nt">block</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_zone_02</span>
+</code></pre></div>
+<h3 id="labels">Labels</h3>
+<p>Similar to <a href="#zones">zones</a>, notifications can be filtered based on labels. By default, the app will generate notifications regardless of any labels received from Frigate. Using this config section, certain labels can be blocked from sending notifications - or an allowlist can be provided to only generate alerts from specified labels.</p>
+<ul>
+<li><strong>min_score</strong> (Optional - Default: <code>0</code>)<ul>
+<li>Env: <code>FN_ALERTS__LABELS__MIN_SCORE</code></li>
+<li>Filter by minimum label score, based on Frigate <code>top_score</code> value</li>
+<li>Scores are a percent accuracy of object identification (0-100)</li>
+<li>For example, to filter objects under 80% accuracy, set <code>min_score: 80</code></li>
+<li>By default, any score above 0 will generate an alert</li>
+</ul>
+</li>
+<li><strong>Per-profile min_score</strong> (Optional)<ul>
+<li>Each provider profile's filters can also carry a <code>min_score</code> map (<code>label: 0.0-1.0</code>), so different labels can have different minimum scores per channel — see <a href="profilesandfilters.html">Alert Profiles &amp; Filters</a></li>
+<li>A label's detections are dropped only when every scored detection of that label is below its minimum; detections without a score are never dropped</li>
+</ul>
+</li>
+<li><strong>allow</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__LABELS__ALLOW</code></li>
+<li>Specify a list of labels to allow notifications</li>
+<li>If set, all other labels will be ignored</li>
+<li>If not set, all labels will generate notifications</li>
+<li>If configuring via environment variable, separate label names by semicolon</li>
+</ul>
+</li>
+<li><strong>block</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__LABELS__BLOCK</code></li>
+<li>Specify a list of labels to always ignore</li>
+<li>This takes precedence over the <code>allow</code> list</li>
+<li>If configuring via environment variable, separate label names by semicolon</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">labels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">min_score</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">80</span>
+<span class="w">    </span><span class="nt">allow</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">person</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">dog</span>
+<span class="w">    </span><span class="nt">block</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bird</span>
+</code></pre></div>
+<h3 id="sublabels">Sublabels</h3>
+<p>Filter by sublabels, just like normal <a href="#labels">labels</a>.</p>
+<ul>
+<li><strong>allow</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SUBLABELS__ALLOW</code></li>
+<li>Specify a list of sublabels to allow notifications</li>
+<li>If set, all other sublabels will be ignored</li>
+<li>If not set, all sublabels will generate notifications</li>
+<li>If configuring via environment variable, separate sublabel names by semicolon</li>
+</ul>
+</li>
+<li><strong>block</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SUBLABELS__BLOCK</code></li>
+<li>Specify a list of sublabels to always ignore</li>
+<li>This takes precedence over the <code>allow</code> list</li>
+<li>If configuring via environment variable, separate sublabel names by semicolon</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">sublabels</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">allow</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ABCD</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EFGH</span>
+<span class="w">    </span><span class="nt">block</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">XYZ</span>
+</code></pre></div>
+<h3 id="license-plate">License Plate</h3>
+<p>Include license plate recognition data in notifications, if enabled in Frigate.</p>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__LICENSE_PLATE__ENABLED</code></li>
+<li>Specify whether to wait for license plate recognition data when Frigate detects a car &amp; license plate</li>
+<li>This will re-check the Frigate for license plate information every 2 seconds with a 10 second maximum</li>
+</ul>
+</li>
+<li><strong>allow</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__LICENSE_PLATE__ALLOW</code></li>
+<li>Specify a list of license plates to allow notifications</li>
+<li>If set, all other license plates will be ignored</li>
+<li>If not set, all license plates will generate notifications</li>
+<li>If configuring via environment variable, separate license plates by semicolon</li>
+</ul>
+</li>
+<li><strong>block</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__LICENSE_PLATE__BLOCK</code></li>
+<li>Specify a list of license plates to always ignore</li>
+<li>This takes precedence over the <code>allow</code> list</li>
+<li>If configuring via environment variable, separate license plates by semicolon</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">license_plate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">allow</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ABCD</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">EFGH</span>
+<span class="w">    </span><span class="nt">block</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">XYZ</span>
+</code></pre></div>
+<h3 id="apprise-api">Apprise API</h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Notifications via Apprise require an external service: <a href="https://github.com/caronc/apprise-api">https://github.com/caronc/apprise-api</a></p>
+<p>Please follow the instructions on the <a href="https://github.com/caronc/apprise-api">apprise api</a> repo for set up &amp; configuration. This service exposes a REST API that Frigate-Notify-Plus uses to forward notifications to various notification providers.</p>
+<p>⚠️ Not all Apprise notification providers support sending attachments. See the full list <a href="https://github.com/caronc/apprise/wiki">here</a>.</p>
+</div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Apprise API</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__SERVER</code></li>
+<li>Full URL of the desired <a href="https://github.com/caronc/apprise-api">apprise api</a> container</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>token</strong> (Required - Unless <code>urls</code> is used)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__TOKEN</code></li>
+<li>Config token in apprise api</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>urls</strong> (Required - Unless <code>token</code> is used)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__URLS</code></li>
+<li>Destination Apprise URLs to forward notifications to</li>
+<li>See supported providers &amp; example URL formats <a href="https://github.com/caronc/apprise?tab=readme-ov-file#supported-notifications">here</a></li>
+<li>If configuring via environment variable, separate URLs by semicolon</li>
+</ul>
+</li>
+<li><strong>tags</strong> (Optional - Required if <code>token</code> is used)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__TAGS</code></li>
+<li>If using a config token, specify target tags to notify</li>
+<li>If configuring via environment variable, separate tags by semicolon</li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional)<ul>
+<li>Optionally overrride global message title for this notification provider</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__APPRISE_API__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">apprise_api</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">token</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">urls</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ntfy://xxxxxxxx/frigate</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">discord://xxxxxxxxxxx</span>
+<span class="w">    </span><span class="nt">tags</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ntfy</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="bark">Bark</h3>
+<p>Bark sends iOS push notifications via a Bark server (the public server at <code>https://api.day.app</code>, or a self-hosted server).</p>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__BARK__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Bark</li>
+</ul>
+</li>
+<li><strong>server</strong> (Optional - Default: <code>https://api.day.app</code>)<ul>
+<li>Env: <code>FN_ALERTS__BARK__SERVER</code></li>
+<li>Bark server URL</li>
+</ul>
+</li>
+<li><strong>device_key</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__BARK__DEVICE_KEY</code></li>
+<li>The device key from the Bark app on your iPhone</li>
+</ul>
+</li>
+<li><strong>sound</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__BARK__SOUND</code></li>
+<li>Notification sound, for example <code>alarm.caf</code></li>
+</ul>
+</li>
+<li><strong>badge</strong> (Optional - Default: <code>0</code>)<ul>
+<li>Env: <code>FN_ALERTS__BARK__BADGE</code></li>
+<li>Badge number shown on the app icon; <code>0</code> omits the badge field</li>
+</ul>
+</li>
+<li><strong>icon</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__BARK__ICON</code></li>
+<li>Notification icon URL</li>
+</ul>
+</li>
+<li><strong>url</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__BARK__URL</code></li>
+<li>URL opened when the Bark notification is tapped</li>
+</ul>
+</li>
+<li><strong>group</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__BARK__GROUP</code></li>
+<li>Notification group</li>
+</ul>
+</li>
+<li><strong>level</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__BARK__LEVEL</code></li>
+<li>Notification level: <code>active</code>, <code>timeSensitive</code>, or <code>passive</code>; empty sends the server default</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">bark</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">      </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://api.day.app</span>
+<span class="w">      </span><span class="nt">device_key</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">xxxxxxxxxxxxxxxx</span>
+<span class="w">      </span><span class="nt">level</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">active</span>
+</code></pre></div>
+<h3 id="discord">Discord</h3>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__DISCORD__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Discord webhooks</li>
+</ul>
+</li>
+<li><strong>webhook</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__DISCORD__WEBHOOK</code></li>
+<li>Full URL of the desired Discord webhook to send alerts through</li>
+<li>Required if this alerting method is enabled</li>
+<li>Check <a href="https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks">Discord's</a> docs for how to create a webhook</li>
+</ul>
+</li>
+<li><strong>disable_embed</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__DISCORD__DISABLE_EMBED</code></li>
+<li>By default, notifications are sent as Discord embedded message</li>
+<li>Set to <code>true</code> to disable this</li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__DISCORD__TITLE</code></li>
+<li>Optionally overrride global message title for this notification provider</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__DISCORD__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span><span class="w">  </span>
+<span class="w">  </span><span class="nt">discord</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">webhook</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://&lt;your-discord-webhook-here&gt;</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="gotify">Gotify</h3>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GOTIFY__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Gotify</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__GOTIFY__SERVER</code></li>
+<li>IP or hostname of the target Gotify server</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>token</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__GOTIFY__TOKEN</code></li>
+<li>App token associated with this app in Gotify</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>priority</strong> (Optional - Default: <code>0</code>)<ul>
+<li>Optionally specify message priority</li>
+<li>Valid range: 0-10</li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__GOTIFY__TITLE</code></li>
+<li>Optionally overrride global message title for this notification provider</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__GOTIFY__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__GOTIFY__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span><span class="w">  </span>
+<span class="w">  </span><span class="nt">gotify</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gotify.your.domain.tld</span>
+<span class="w">    </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ABCDEF</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="matrix">Matrix</h3>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Matrix webhooks</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__SERVER</code></li>
+<li>Full URL of the desired Matrix homeserver</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>username</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__USERNAME</code></li>
+<li>Username of Matrix user</li>
+</ul>
+</li>
+<li><strong>password</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__PASSWORD</code></li>
+<li>Password for Matrix user</li>
+</ul>
+</li>
+<li><strong>roomid</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__ROOMID</code></li>
+<li>Target Room ID to send notifications</li>
+<li>Format: <code>"!&lt;roomid&gt;:&lt;matrixhomeserver&gt;"</code><ul>
+<li>Note: This <strong>must</strong> be wrapped in quotes</li>
+</ul>
+</li>
+<li>Notification user must be invited to this room</li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__MATRIX__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="w">  </span><span class="nt">matrix</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://matrix.your.domain.tld</span>
+<span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">someuser</span>
+<span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">somepass</span>
+<span class="w">    </span><span class="nt">roomid</span><span class="p">:</span><span class="w"> </span><span class="s">"!abcd1234:matrix.your.domain.tld"</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="mattermost">Mattermost</h3>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Mattermost webhooks</li>
+</ul>
+</li>
+<li><strong>webhook</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__WEBHOOK</code></li>
+<li>Full URL of the desired Mattermost webhook to send alerts through</li>
+<li>Required if this alerting method is enabled</li>
+<li>Check <a href="https://developers.mattermost.com/integrate/webhooks/incoming/">Mattermost's</a> docs for how to create a webhook</li>
+</ul>
+</li>
+<li><strong>channel</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__CHANNEL</code></li>
+<li>Override destination channel to post messages, if allowed by Mattermost config</li>
+</ul>
+</li>
+<li><strong>username</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__USERNAME</code></li>
+<li>Override username to post messages as, if allowed by Mattermost config</li>
+</ul>
+</li>
+<li><strong>priority</strong> (Optional - Default: <code>standard</code>)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__PRIORITY</code></li>
+<li>Set message priority</li>
+<li>Options: <code>standard</code>, <code>important</code>, <code>urgent</code></li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>headers</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__HEADERS</code></li>
+<li>Send additional HTTP headers with Mattermost webhook</li>
+<li>Header values can utilize <a href="templates.html#available-variables">template variables</a></li>
+<li>Header format: <code>Header: Value</code></li>
+<li>Example: <code>Authorization: Basic abcd1234</code></li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__MATTERMOST__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="w">  </span><span class="nt">mattermost</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">webhook</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://mattermost.your.domain.tld</span>
+<span class="w">    </span><span class="nt">channel</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate-notifications</span>
+<span class="w">    </span><span class="nt">username</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate-notify-plus</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">standard</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="ntfy">Ntfy</h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you're self-hosting Ntfy, you'll need to ensure support for <a href="https://docs.ntfy.sh/config/#attachments">attachments</a> is enabled.</p>
+</div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Ntfy</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__SERVER</code></li>
+<li>Full URL of the desired Ntfy server</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>topic</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__TOPIC</code></li>
+<li>Destination topic that will receive alert notifications</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__TITLE</code></li>
+<li>Optionally overrride global message title for this notification provider</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>headers</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__HEADERS</code></li>
+<li>Send additional HTTP headers to Ntfy server</li>
+<li>Header values can utilize <a href="templates.html#available-variables">template variables</a></li>
+<li>Header format: <code>Header: Value</code></li>
+<li>Example: <code>Authorization: Basic abcd1234</code></li>
+<li><strong>Note:</strong> Notifications via Ntfy are sent with a default action button that links to the event clip. This can be overridden by defining a custom <code>X-Action</code> header here</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__NTFY__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">ntfy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ntfy.your.domain.tld</span>
+<span class="w">    </span><span class="nt">topic</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">frigate</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="pushover">Pushover</h3>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Pushover</li>
+</ul>
+</li>
+<li><strong>token</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__TOKEN</code></li>
+<li>Pushover application API token</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>userkey</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__USERKEY</code></li>
+<li>Recipient user or group key from Pushover dashboard</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>devices</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__DEVICES</code></li>
+<li>Optionally specify list of devices to send notifications to</li>
+<li>If left empty, all devices will receive the notification</li>
+</ul>
+</li>
+<li><strong>sound</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__SOUND</code></li>
+<li>Specify custom sound for notifications from this app</li>
+<li>For available values, see the <a href="https://pushover.net/api#sounds">Pushover Docs</a></li>
+</ul>
+</li>
+<li><strong>priority</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__PRIORITY</code></li>
+<li>Optionally set message priority</li>
+<li>Valid priorities are -2, -1, 0, 1, 2</li>
+</ul>
+</li>
+<li><strong>retry</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__RETRY</code></li>
+<li>Message retry in seconds until message is acknowledged</li>
+<li>If <code>priority</code> is set to 2, this is required</li>
+<li>Minimum value is 30 seconds</li>
+</ul>
+</li>
+<li><strong>expire</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__EXPIRE</code></li>
+<li>Expiration timer for message retry</li>
+<li>If <code>priority</code> is set to 2, this is required</li>
+</ul>
+</li>
+<li><strong>ttl</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__TTL</code></li>
+<li>Optionally set lifetime of message, in seconds</li>
+<li>If set, message notifications are deleted from devices after this time</li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__TITLE</code></li>
+<li>Optionally overrride global message title for this notification provider</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__PUSHOVER__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="w">  </span><span class="nt">pushover</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">aaaaaaaaaaaaaaaaaaaaaa</span>
+<span class="w">    </span><span class="nt">userkey</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bbbbbbbbbbbbbbbbbbbbbb</span>
+<span class="w">    </span><span class="nt">devices</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">device1,device2</span>
+<span class="w">    </span><span class="nt">sound</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0</span>
+<span class="w">    </span><span class="nt">retry</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">expire</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ttl</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="signal">Signal</h3>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Signal notifications rely on an external service to handle communication to Signal: <a href="https://github.com/bbernhard/signal-cli-rest-api">https://github.com/bbernhard/signal-cli-rest-api</a></p>
+<p>Please follow the instructions on the <a href="https://github.com/bbernhard/signal-cli-rest-api">signal-cli-rest-api</a> repo for set up &amp; configuration. This service exposes a REST API that Frigate-Notify-Plus uses to forward notifications to Signal.</p>
+</div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__SIGNAL__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Ntfy</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__SIGNAL__SERVER</code></li>
+<li>Full URL of the desired <a href="https://github.com/bbernhard/signal-cli-rest-api">signal-cli-rest-api</a> container</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>account</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__SIGNAL__ACCOUNT</code></li>
+<li>Signal account used to send notifications</li>
+<li>This is the full phone number including country code (ex. <code>+12223334444</code>)</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>recipients</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__SIGNAL__RECIPIENTS</code></li>
+<li>One or more Signal recipients that will receive notifications</li>
+<li>This is the full phone number including country code (ex. <code>+12223334444</code>)</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__SIGNAL__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SIGNAL__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">signal</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://signal-cli-rest-api.your.domain.tld</span>
+<span class="w">    </span><span class="nt">account</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+12223334444</span>
+<span class="w">    </span><span class="nt">recipients</span><span class="p">:</span>
+<span class="w">     </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">+15556667777</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="smtp">SMTP</h3>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via SMTP</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__SERVER</code></li>
+<li>IP or hostname of the target SMTP server</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>port</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__PORT</code></li>
+<li>Port of the target SMTP server</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>tls</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__TLS</code></li>
+<li>Set to <code>true</code> if SMTP TLS is required</li>
+</ul>
+</li>
+<li><strong>authtype</strong> (Optional = Default: <code>plain</code>)<ul>
+<li>ENV: <code>FN__ALERTS__SMTP__AUTHTYPE</code></li>
+<li>Set SMTP Authentication type</li>
+<li>Valid options: <code>plain, plain-noenc, login, login-noenc, noauth, cram-md5, xoauth2, scram-sha-1, scram-sha-1-plus, scram-sha-256, scram-sha-256-plus, autodiscover</code></li>
+</ul>
+</li>
+<li><strong>user</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__USER</code></li>
+<li>Add SMTP username for authentication</li>
+<li>If username &amp; password are not set, then authentication is disabled</li>
+</ul>
+</li>
+<li><strong>password</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__PASSWORD</code></li>
+<li>Password of SMTP user</li>
+<li>Required if <code>user</code> is set</li>
+</ul>
+</li>
+<li><strong>from</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__FROM</code></li>
+<li>Set sender address for outgoing messages</li>
+<li>If left blank but authentication is configured, then <code>user</code> will be used</li>
+</ul>
+</li>
+<li><strong>recipient</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__RECIPIENT</code></li>
+<li>Comma-separated list of email recipients</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>thread</strong> (Optional - Default: <code>day</code>)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__THREAD</code></li>
+<li>Control how SMTP notifications are threaded, if your email client supports it</li>
+<li>Valid threading options are <code>day</code> or <code>camera</code></li>
+<li><strong>Note:</strong> per <code>camera</code> threads will still roll-over each day</li>
+<li><strong>Note:</strong> If you modify the default frigate-notify-plus message title, you may break threading if the subject changes between notifications</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+<li><strong>title</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__TITLE</code></li>
+<li>Optionally overrride global message title for this notification provider</li>
+<li>Title value can utilize <a href="templates.html#available-variables">template variables</a></li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>msguuid</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__SMTP__MSGUUID</code></li>
+<li>Set to <code>true</code> to generate message-id from uuid</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span><span class="w">  </span>
+<span class="w">  </span><span class="nt">smtp</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">smtp.your.domain.tld</span>
+<span class="w">    </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">587</span>
+<span class="w">    </span><span class="nt">tls</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">authtype</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">login</span>
+<span class="w">    </span><span class="nt">from</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_user@your.domain.tld</span>
+<span class="w">    </span><span class="nt">user</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_user@your.domain.tld</span>
+<span class="w">    </span><span class="nt">password</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">test_pass</span>
+<span class="w">    </span><span class="nt">recipient</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">nvr_group@your.domain.tld, someone_else@your.domain.tld</span>
+<span class="w">    </span><span class="nt">title</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">msguuid</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="telegram">Telegram</h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>There is an <a href="https://github.com/0x2142/frigate-notify/issues/54#issuecomment-2148564526">issue</a> with Telegram alerts if you use URL-embedded credentials for your Frigate links, for example: <code>https://user:pass@frigate.domain.tld</code></p>
+<p>Telegram appears to incorrectly process these URLs, which will cause the camera &amp; clip links  to become unclickable within Telegram.</p>
+</div>
+<p>In order to use Telegram for alerts, a bot token &amp; chat ID are required.</p>
+<p>To obtain a bot token, follow <a href="https://core.telegram.org/bots#how-do-i-create-a-bot">this</a> doc to message @BotFather.</p>
+<p>Once you have a bot token, make sure to initiate a chat message with your bot. Then visit the following URL:</p>
+<ul>
+<li><code>https://api.telegram.org/bot&lt;BOT_TOKEN&gt;/getUpdates</code></li>
+<li>Replace <code>&lt;BOT_TOKEN&gt;</code> with the API token provided by @BotFather.</li>
+</ul>
+<p>Within the response, locate your message to the bot, then grab the ID under <code>message &gt; chat &gt; id</code>. An example response is shown below, where <code>999999999</code> is the ID we need to save:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"update_id"</span><span class="p">:</span><span class="w"> </span><span class="mi">1234567</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"chat"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="mi">999999999</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"first_name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Test User"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"username"</span><span class="p">:</span><span class="w"> </span><span class="s2">"test-username1234"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"private"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via Telegram</li>
+</ul>
+</li>
+<li><strong>chatid</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CHATID</code></li>
+<li>Chat ID for the alert recipient</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>token</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__TOKEN</code></li>
+<li>Bot token generated from <a href="https://core.telegram.org/bots#how-do-i-create-a-bot">@BotFather</a></li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>send_clip</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__SEND_CLIP</code></li>
+<li>Optionally send event video clip instead of snapshot image</li>
+<li><strong>Note</strong>: Clips may take a short while to become available. Use <a href="#general"><code>max_snap_retry</code></a> to control how long frigate-notify-plus will wait for the clip to become available</li>
+</ul>
+</li>
+<li><strong>send_clip_after_snapshot</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__SEND_CLIP_AFTER_SNAPSHOT</code></li>
+<li>Optionally send the snapshot image immediately, then replace that same message with the event video clip once it becomes available</li>
+<li>Unlike <code>send_clip</code> (which waits for the clip before sending anything), this delivers the snapshot right away and upgrades it to video in-place — so a fast notification is always sent, and the snapshot is kept if the clip never becomes available or exceeds <code>clip_max_size</code></li>
+<li>Takes precedence over <code>send_clip</code> when both are enabled</li>
+<li><strong>Note</strong>: Clips may take a short while to become available. Use <a href="#general"><code>max_snap_retry</code></a> to control how long frigate-notify-plus will wait for the clip to become available</li>
+</ul>
+</li>
+<li><strong>clip_max_size</strong> (Optional - Default: <code>50</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CLIP_MAX_SIZE</code></li>
+<li>Maximum clip size, in MB, that will be uploaded when replacing the snapshot via <code>send_clip_after_snapshot</code>. Larger clips are skipped and the snapshot is kept</li>
+<li>Telegram's cloud Bot API caps bot uploads at <strong>50 MB</strong>. If you run a <a href="https://core.telegram.org/bots/api#using-a-local-bot-api-server">self-hosted Local Bot API server</a> you can raise this up to <code>2000</code></li>
+</ul>
+</li>
+<li><strong>clip_transcode</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CLIP_TRANSCODE</code></li>
+<li>Optionally re-encode the clip to a smaller H.264/AAC video before it is uploaded, so it is lighter to download. Applies to both <code>send_clip</code> and <code>send_clip_after_snapshot</code></li>
+<li>Requires <code>ffmpeg</code>, which is included in the Docker image. If running the binary directly, <code>ffmpeg</code> must be installed</li>
+<li>When enabled, <code>clip_max_size</code> applies to the transcoded clip</li>
+<li>If the transcode fails or exceeds <code>clip_transcode_timeout</code>, the snapshot is sent or kept instead</li>
+<li>If the transcoded clip is not smaller than the original, the original is sent</li>
+<li>Only one clip is transcoded at a time. Each one logs its size before &amp; after and the time taken</li>
+</ul>
+</li>
+<li><strong>clip_transcode_height</strong> (Optional - Default: <code>720</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CLIP_TRANSCODE_HEIGHT</code></li>
+<li>Maximum height, in pixels, of the transcoded clip. Width follows the aspect ratio, and smaller clips are not upscaled</li>
+</ul>
+</li>
+<li><strong>clip_transcode_bitrate</strong> (Optional - Default: <code>1000</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CLIP_TRANSCODE_BITRATE</code></li>
+<li>Maximum video bitrate, in kbit/s, of the transcoded clip. Audio adds 64 kbit/s</li>
+<li>The default produces roughly 1.3 MB for a 10 second clip, or 8 MB for a minute</li>
+</ul>
+</li>
+<li><strong>clip_transcode_timeout</strong> (Optional - Default: <code>120</code>)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CLIP_TRANSCODE_TIMEOUT</code></li>
+<li>Maximum time, in seconds, to wait for <code>ffmpeg</code> to transcode a clip</li>
+</ul>
+</li>
+<li><strong>clip_transcode_vaapi_device</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__CLIP_TRANSCODE_VAAPI_DEVICE</code></li>
+<li>Optionally transcode on a GPU via VAAPI by specifying its render device, for example <code>/dev/dri/renderD128</code>. This is faster &amp; uses far less CPU than the default software encoder, at somewhat lower quality for the same bitrate</li>
+<li>The device must be passed into the container. The Docker image includes the Intel VA driver (x86_64 only)</li>
+<li>If the GPU transcode fails for any reason, the clip is transcoded in software instead</li>
+</ul>
+</li>
+<li><strong>message_thread_id</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__MESSAGE_THREAD_ID</code></li>
+<li>Optionally send notification to a message thread by ID</li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__TELEGRAM__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">alerts</span><span class="p">:</span><span class="w">  </span>
+<span class="w">  </span><span class="nt">telegram</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">chatid</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">123456789</span>
+<span class="w">    </span><span class="nt">message_thread_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">send_clip</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">send_clip_after_snapshot</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">clip_max_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">50</span>
+<span class="w">    </span><span class="nt">clip_transcode</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">clip_transcode_height</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">720</span>
+<span class="w">    </span><span class="nt">clip_transcode_bitrate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000</span>
+<span class="w">    </span><span class="nt">clip_transcode_timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">120</span>
+<span class="w">    </span><span class="nt">clip_transcode_vaapi_device</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">token</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">987654321:ABCDEFGHIJKLMNOP</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h3 id="webhook">Webhook</h3>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Webhook alerts are JSON only, and do not contain an image from the event.</p>
+</div>
+<div class="highlight"><span class="filename">Default webhook message</span><pre><span></span><code><span class="p">{</span>
+<span class="w">    </span><span class="nt">"time"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"id"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"camera"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"label"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"score"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"current_zones"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"entered_zones"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"has_clip"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"has_snapshot"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"links"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">"camera"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"clip"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"snapshot"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"genai"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">         </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"summary"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"threat_level"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"confidence"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"concerns"</span><span class="p">:</span><span class="w"> </span><span class="s2">""</span><span class="p">,</span>
+<span class="w">         </span><span class="nt">"observations"</span><span class="p">:</span><span class="w"> </span><span class="p">[]</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The <code>genai</code> field is only included when GenAI data is available from Frigate. If Frigate does not have GenAI configured or no GenAI data is present for the event, this field will be omitted.</p>
+</div>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__ENABLED</code></li>
+<li>Set to <code>true</code> to enable alerting via webhook</li>
+</ul>
+</li>
+<li><strong>server</strong> (Required)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__SERVER</code></li>
+<li>Full URL of the desired webhook server</li>
+<li>Required if this alerting method is enabled</li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+<li><strong>method</strong> (Optional - Default: <code>POST</code>)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__METHOD</code></li>
+<li>Set HTTP method for webhook notifications</li>
+<li>Supports <code>GET</code> and <code>POST</code></li>
+</ul>
+</li>
+<li><strong>params</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__PARAMS</code></li>
+<li>Set optional HTTP params that will be appended to URL</li>
+<li>Params can utilize <a href="templates.html#available-variables">template variables</a></li>
+<li>Format: <code>param: value</code></li>
+<li>Example: <code>token: abcd1234</code></li>
+</ul>
+</li>
+<li><strong>headers</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__HEADERS</code></li>
+<li>Send additional HTTP headers to webhook receiver</li>
+<li>Header values can utilize <a href="templates.html#available-variables">template variables</a></li>
+<li>Header format: <code>Header: Value</code></li>
+<li>Example: <code>Authorization: Basic abcd1234</code></li>
+</ul>
+</li>
+<li><strong>template</strong> (Optional)<ul>
+<li>Env: <code>FN_ALERTS__WEBHOOK__TEMPLATE</code></li>
+<li>Optionally specify a custom notification template</li>
+<li>Only applies when <code>method</code> is <code>POST</code></li>
+<li>For more information on template syntax, see <a href="templates.html#alert-templates">Alert Templates</a></li>
+<li>Note: Webhook templates <strong>must</strong> be valid JSON</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="w">  </span><span class="nt">webhook</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">server</span><span class="p">:</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">ignoressl</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">method</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">params</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">headers</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">template</span><span class="p">:</span>
+</code></pre></div>
+<h2 id="monitor">Monitor</h2>
+<p>If enabled, this application will check in with tools like <a href="https://github.com/healthchecks/healthchecks">HealthChecks</a> or <a href="https://github.com/louislam/uptime-kuma">Uptime Kuma</a> on a regular interval for health / status monitoring.</p>
+<ul>
+<li><strong>enabled</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_MONITOR__ENABLED</code></li>
+<li>Set to <code>true</code> to enable health checks</li>
+</ul>
+</li>
+<li><strong>url</strong> (Required)<ul>
+<li>Env: <code>FN_MONITOR__URL</code></li>
+<li>URL path for health check service</li>
+<li>Required if monitoring is enabled</li>
+</ul>
+</li>
+<li><strong>interval</strong> (Required - Default: <code>60</code>)<ul>
+<li>Env: <code>FN_MONITOR__INTERVAL</code></li>
+<li>Frequency of check-in events</li>
+<li>Required if monitoring is enabled</li>
+</ul>
+</li>
+<li><strong>ignoressl</strong> (Optional - Default: <code>false</code>)<ul>
+<li>Env: <code>FN_MONITOR__IGNORESSL</code></li>
+<li>Set to <code>true</code> to allow self-signed certificates</li>
+</ul>
+</li>
+</ul>
+<div class="highlight"><span class="filename">Config File Snippet</span><pre><span></span><code><span class="nt">monitor</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">  </span><span class="nt">url</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">interval</span><span class="p">:</span><span class="w"> </span>
+<span class="w">  </span><span class="nt">ignoressl</span><span class="p">:</span><span class="w"> </span>
+</code></pre></div>
+    </article>
+    <div class="prevnext"><a class="pn-card prev" href="index.html"><span class="pn-cap">&larr; Previous</span><span class="pn-name">Overview</span></a><a class="pn-card next" href="options.html"><span class="pn-cap">Next &rarr;</span><span class="pn-name">Config Options</span></a></div>
+  </main>
+  <aside class="toc"><div class="toc-box"><div class="toc-title">On this page</div><a class="lvl2" href="#config-file-location">Config file location</a><a class="lvl2" href="#app">App</a><a class="lvl2" href="#frigate">Frigate</a><a class="lvl3" href="#server">Server</a><a class="lvl3" href="#webapi">WebAPI</a><a class="lvl3" href="#mqtt">MQTT</a><a class="lvl3" href="#cameras">Cameras</a><a class="lvl2" href="#alerts">Alerts</a><a class="lvl3" href="#general">General</a><a class="lvl3" href="#routing">Routing</a><a class="lvl3" href="#quiet-hours">Quiet Hours</a><a class="lvl3" href="#zones">Zones</a><a class="lvl3" href="#labels">Labels</a><a class="lvl3" href="#sublabels">Sublabels</a><a class="lvl3" href="#license-plate">License Plate</a><a class="lvl3" href="#apprise-api">Apprise API</a><a class="lvl3" href="#bark">Bark</a><a class="lvl3" href="#discord">Discord</a><a class="lvl3" href="#gotify">Gotify</a><a class="lvl3" href="#matrix">Matrix</a><a class="lvl3" href="#mattermost">Mattermost</a><a class="lvl3" href="#ntfy">Ntfy</a><a class="lvl3" href="#pushover">Pushover</a><a class="lvl3" href="#signal">Signal</a><a class="lvl3" href="#smtp">SMTP</a><a class="lvl3" href="#telegram">Telegram</a><a class="lvl3" href="#webhook">Webhook</a><a class="lvl2" href="#monitor">Monitor</a></div></aside>
+</div>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <a class="brand" href="../../index.html">
+        <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="#2563eb"/><path d="M16 6.5 8 9.3v6.1c0 5 3.4 8.6 8 10.1 4.6-1.5 8-5.1 8-10.1V9.3L16 6.5Z" fill="none" stroke="#fff" stroke-width="1.8" stroke-linejoin="round"/><path d="M16 11.2a3.4 3.4 0 0 1 3.4 3.4c0 2.6.8 3.4 1.3 4H11.3c.5-.6 1.3-1.4 1.3-4A3.4 3.4 0 0 1 16 11.2Z" fill="#fff"/><circle cx="16" cy="20.6" r="1.5" fill="#fff"/></svg>
+        Frigate&nbsp;Notify&nbsp;<span class="plus" style="color:#60a5fa">Plus</span>
+      </a>
+      <div class="foot-links">
+        <a href="../index.html">Documentation</a>
+        <a href="https://github.com/izerok/frigate-notify-plus">GitHub</a>
+        <a href="https://github.com/izerok/frigate-notify-plus/releases">Releases</a>
+      </div>
+    </div>
+    <div class="foot-meta">
+      Frigate Notify Plus is released under the MIT License.<br>
+      Built on <a href="https://github.com/0x2142/frigate-notify">0x2142/frigate-notify</a>, and works with <a href="https://frigate.video">Frigate NVR</a>. Not affiliated with the Frigate project.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
