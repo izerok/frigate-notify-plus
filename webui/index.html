@@ -1753,9 +1753,10 @@ async function loadStatus(){
 }
 function histClass(h){
   const d = String(h.detail||'');
+  const dl = d.toLowerCase();
   if(h.ok) return 'sent';
-  if(d.indexOf('已静音')!==-1 || d.indexOf('冷却')!==-1) return 'cooled';
-  if(d.indexOf('过滤')!==-1) return 'filtered';
+  if(d.indexOf('已静音')!==-1 || d.indexOf('冷却')!==-1 || dl.indexOf('muted')!==-1 || dl.indexOf('cooled down')!==-1 || dl.indexOf('cooldown')!==-1) return 'cooled';
+  if(d.indexOf('过滤')!==-1 || dl.indexOf('filtered')!==-1) return 'filtered';
   return 'failed';
 }
 function deliveryStripHtml(hist, provider){
@@ -1887,8 +1888,9 @@ async function loadHistory(){
 function histResultOf(h){
   if(h.ok) return {cls:'sent', label:t('hist.sent')};
   const d = String(h.detail||'');
-  if(d.indexOf('已静音')!==-1 || d.indexOf('冷却')!==-1) return {cls:'muted', label:t('hist.muted')};
-  if(d.indexOf('过滤')!==-1) return {cls:'filtered', label:t('hist.filtered')};
+  const dl = d.toLowerCase();
+  if(d.indexOf('已静音')!==-1 || d.indexOf('冷却')!==-1 || dl.indexOf('muted')!==-1 || dl.indexOf('cooled down')!==-1 || dl.indexOf('cooldown')!==-1) return {cls:'muted', label:t('hist.muted')};
+  if(d.indexOf('过滤')!==-1 || dl.indexOf('filtered')!==-1) return {cls:'filtered', label:t('hist.filtered')};
   return {cls:'failed', label:t('hist.failed')};
 }
 function histPillCls(cls){
