@@ -95,7 +95,7 @@ func SendAppriseAPI(event models.Event, snapshot io.Reader, provider notifMeta) 
 		appriseapiURL += "/" + profile.Token
 	}
 
-	response, err := util.HTTPPost(appriseapiURL, profile.Insecure, data, "", header)
+	response, err := util.HTTPPostProxied(appriseapiURL, profile.Insecure, profile.Proxy, data, "", header)
 	if err != nil {
 		log.Warn().
 			Str("event_id", event.ID).

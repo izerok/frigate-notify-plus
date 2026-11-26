@@ -353,4 +353,63 @@ else
   echo "DATA_DIR unset, skipping data-dir assertions"
 fi
 
+echo "== proxy phase: webhook delivery transits the forward proxy =="
+# Route both webhook profiles at the catcher via a name that only
+# resolves on this host, and set the global outbound proxy to the tiny
+# proxy on :18082. The name is neither "localhost" nor a loopback IP,
+# so it is not bypassed; delivery is impossible except via the proxy.
+curl -fsS $API/api/v1/config > /tmp/config-proxy-backup.json
+python3 - <<'EOF'
+import json
+c = json.load(open('/tmp/config-proxy-backup.json'))["config"]
+c["alerts"]["general"]["proxy"] = {"url": "http://127.0.0.1:18082"}
+c["alerts"]["webhook"][0]["server"] = "http://webhook-catcher:18081/hook"
+c["alerts"]["webhook"][1]["server"] = "http://webhook-catcher:18081/hook2"
+json.dump({"config": c}, open('/tmp/config-put.json', 'w'))
+EOF
+curl -fsS -X PUT -H 'Content-Type: application/json' --data @/tmp/config-put.json $API/api/v1/config | grep -q '"status":"ok"'
+sleep 3
+publish_genai_expect 10
+grep -q "POST http://webhook-catcher:18081/hook" /tmp/proxy-hits.log || { echo "FAIL: webhook delivery did not transit the proxy"; cat /tmp/proxy-hits.log; exit 1; }
+posts_after_transit=$(wc -l < /tmp/webhook-posts.jsonl)
+echo "proxy transit ok: webhook post #$posts_after_transit arrived via the forward proxy"
+
+echo "== proxy phase (2): dead proxy fails the delivery, no direct fallback =="
+python3 - <<'EOF'
+import json
+c = json.load(open('/tmp/config-proxy-backup.json'))["config"]
+c["alerts"]["general"]["proxy"] = {"url": "http://127.0.0.1:9"}
+c["alerts"]["webhook"][0]["server"] = "http://webhook-catcher:18081/hook"
+c["alerts"]["webhook"][1]["server"] = "http://webhook-catcher:18081/hook2"
+json.dump({"config": c}, open('/tmp/config-put.json', 'w'))
+EOF
+curl -fsS -X PUT -H 'Content-Type: application/json' --data @/tmp/config-put.json $API/api/v1/config | grep -q '"status":"ok"'
+sleep 3
+failed_before=$(curl -fsS $API/api/v1/status | python3 -c "import json,sys; print(json.load(sys.stdin)['status']['notifications']['webhook'][0]['failed'])")
+curl -fsS -X POST "$API/api/v1/notif_test?provider=webhook&index=0" > /dev/null
+deadline=$((SECONDS+120))
+while :; do
+  failed_now=$(curl -fsS $API/api/v1/status | python3 -c "import json,sys; print(json.load(sys.stdin)['status']['notifications']['webhook'][0]['failed'])")
+  [ "$failed_now" -gt "$failed_before" ] && break
+  [ $SECONDS -ge $deadline ] && { echo "FAIL: dead-proxy delivery never recorded a failure"; exit 1; }
+  sleep 3
+done
+n=$(wc -l < /tmp/webhook-posts.jsonl)
+[ "$n" -eq "$posts_after_transit" ] || { echo "FAIL: dead-proxy delivery fell back to direct (webhook posts $n, want $posts_after_transit)"; exit 1; }
+curl -fsS $API/api/v1/status | python3 -c "
+import json,sys
+w = json.load(sys.stdin)['status']['notifications']['webhook'][0]
+assert '127.0.0.1:9' in w['last_error'], w
+print('dead-proxy ok: failure recorded, last_error names the proxy:', w['last_error'][:120])
+"
+# Restore the pre-proxy config for the steps that follow.
+python3 - <<'EOF'
+import json
+c = json.load(open('/tmp/config-proxy-backup.json'))["config"]
+json.dump({"config": c}, open('/tmp/config-put.json', 'w'))
+EOF
+curl -fsS -X PUT -H 'Content-Type: application/json' --data @/tmp/config-put.json $API/api/v1/config | grep -q '"status":"ok"'
+sleep 3
+echo "proxy config restored"
+
 echo "ALL CHECKS PASSED"

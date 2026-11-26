@@ -10,6 +10,7 @@ import (
 
 	"github.com/izerok/frigate-notify-plus/models"
 	"github.com/izerok/frigate-notify-plus/util"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 	"github.com/rs/zerolog/log"
 )
 
@@ -80,6 +81,11 @@ func (c *Config) Validate() []string {
 
 	// Validate scheduled GenAI summaries
 	if results := c.validateGenAISchedules(); len(results) > 0 {
+		validationErrors = append(validationErrors, results...)
+	}
+
+	// Validate outbound proxy settings (also publishes them for senders)
+	if results := c.validateProxy(); len(results) > 0 {
 		validationErrors = append(validationErrors, results...)
 	}
 
@@ -705,6 +711,71 @@ func (c *Config) validateGenAISchedules() []string {
 		}
 	}
 	return scheduleErrors
+}
+
+// validateProxy checks the outbound proxy settings: the global proxy URL
+// and bypass list, plus every profile's proxy override (validated for all
+// profiles, not just enabled ones, so a malformed value is caught when it
+// is saved rather than when the profile is first enabled). Validation is
+// pure: the accepted config is published to the proxyx package separately
+// (see ApplyProxyRuntime), so a rejected save cannot change the proxy the
+// running app uses.
+func (c *Config) validateProxy() []string {
+	var proxyErrors []string
+
+	if url := strings.TrimSpace(c.Alerts.General.Proxy.URL); url != "" {
+		if err := proxyx.ValidateURL(url); err != nil {
+			proxyErrors = append(proxyErrors, fmt.Sprintf("alerts.general.proxy.url: %s", err))
+		}
+	}
+	for i, entry := range c.Alerts.General.Proxy.NoProxy {
+		if strings.Contains(entry, "://") || strings.ContainsAny(entry, " \t") {
+			proxyErrors = append(proxyErrors, fmt.Sprintf("alerts.general.proxy.no_proxy.%d: bypass entries must be hostnames, domain suffixes, CIDRs or localhost, without a scheme or spaces", i))
+		}
+	}
+
+	check := func(base, setting string) {
+		if err := proxyx.ValidateSetting(setting); err != nil {
+			proxyErrors = append(proxyErrors, fmt.Sprintf("%s: %s", base, err))
+		}
+	}
+	for i, p := range c.Alerts.AppriseAPI {
+		check(fmt.Sprintf("alerts.apprise_api.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Bark {
+		check(fmt.Sprintf("alerts.bark.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Discord {
+		check(fmt.Sprintf("alerts.discord.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Gotify {
+		check(fmt.Sprintf("alerts.gotify.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Matrix {
+		check(fmt.Sprintf("alerts.matrix.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Mattermost {
+		check(fmt.Sprintf("alerts.mattermost.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Ntfy {
+		check(fmt.Sprintf("alerts.ntfy.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Pushover {
+		check(fmt.Sprintf("alerts.pushover.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Signal {
+		check(fmt.Sprintf("alerts.signal.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.SMTP {
+		check(fmt.Sprintf("alerts.smtp.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Telegram {
+		check(fmt.Sprintf("alerts.telegram.%d.proxy", i), p.Proxy)
+	}
+	for i, p := range c.Alerts.Webhook {
+		check(fmt.Sprintf("alerts.webhook.%d.proxy", i), p.Proxy)
+	}
+	return proxyErrors
 }
 
 // providerProfileCount returns how many profiles are configured for a

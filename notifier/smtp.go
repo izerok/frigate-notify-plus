@@ -10,10 +10,11 @@ import (
 
 	"github.com/rs/zerolog/log"
 
+	"github.com/google/uuid"
 	"github.com/izerok/frigate-notify-plus/config"
 	"github.com/izerok/frigate-notify-plus/models"
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 	"github.com/wneessen/go-mail"
-	"github.com/google/uuid"
 )
 
 var threads map[string]string
@@ -106,8 +107,14 @@ func SendSMTP(event models.Event, snapshot io.Reader, provider notifMeta) {
 
 	time.Sleep(5 * time.Second)
 
-	// Set up SMTP Connection
-	c, err := mail.NewClient(profile.Server, mail.WithPort(profile.Port))
+	// Set up SMTP Connection. When a proxy applies to this profile, the
+	// TCP connection to the server is established through it (CONNECT or
+	// SOCKS5); TLS/STARTTLS then runs over that connection as usual.
+	clientOpts := []mail.Option{mail.WithPort(profile.Port)}
+	if proxyx.Configured(profile.Proxy) {
+		clientOpts = append(clientOpts, mail.WithDialContextFunc(proxyx.DialContext(profile.Proxy)))
+	}
+	c, err := mail.NewClient(profile.Server, clientOpts...)
 	// Add authentication params if needed
 	if profile.User != "" && profile.Password != "" {
 		c.SetUsername(profile.User)

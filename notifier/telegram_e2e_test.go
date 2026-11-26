@@ -267,8 +267,8 @@ func useTelegramE2ESeams(t *testing.T, tg *httptest.Server) {
 		NotifCacheSet, NotifCacheGet = origSet, origGet
 	})
 
-	newTelegramBot = func(token string) (*tgbotapi.BotAPI, error) {
-		return tgbotapi.NewBotAPIWithAPIEndpoint(token, tg.URL+"/bot%s/%s")
+	newTelegramBot = func(profile models.Telegram) (*tgbotapi.BotAPI, error) {
+		return tgbotapi.NewBotAPIWithAPIEndpoint(profile.Token, tg.URL+"/bot%s/%s")
 	}
 	TemplateFiles = os.DirFS("..")
 

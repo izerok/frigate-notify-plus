@@ -14,6 +14,8 @@ import (
 	"time"
 
 	"github.com/rs/zerolog/log"
+
+	"github.com/izerok/frigate-notify-plus/util/proxyx"
 )
 
 var AppUserAgent string
@@ -40,11 +42,6 @@ func setUserAgent(req *http.Request) *http.Request {
 
 // HTTPGet is a simple HTTP client function to return page body
 func HTTPGet(url string, insecure bool, params string, headers ...map[string]string) ([]byte, error) {
-	// Append HTTP params if any
-	if len(params) > 0 {
-		url = url + params
-	}
-
 	// New HTTP Client
 	client := &http.Client{
 		Timeout: time.Duration(HTTPTimeout) * time.Second,
@@ -55,6 +52,27 @@ func HTTPGet(url string, insecure bool, params string, headers ...map[string]str
 	if insecure {
 		client.Transport = &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+
+	return httpGet(url, client, insecure, params, headers...)
+}
+
+// HTTPGetProxied is HTTPGet with the transport resolved from a per-profile
+// proxy setting (see the proxyx package): the request goes through the
+// configured outbound proxy unless the setting forces a direct connection
+// or the target is on the bypass list. It exists for notification-side
+// GETs (webhook GET deliveries, the monitor check-in); Frigate-bound
+// callers keep using HTTPGet, which never proxies.
+func HTTPGetProxied(url string, insecure bool, proxySetting string, params string, headers ...map[string]string) ([]byte, error) {
+	client := proxyx.Client(proxySetting, time.Duration(HTTPTimeout)*time.Second, insecure)
+	client.Jar = cookies
+	return httpGet(url, client, insecure, params, headers...)
+}
+
+func httpGet(url string, client *http.Client, insecure bool, params string, headers ...map[string]string) ([]byte, error) {
+	// Append HTTP params if any
+	if len(params) > 0 {
+		url = url + params
 	}
 
 	// Set auth cookies if Frigate request & auth is enabled
@@ -252,11 +270,6 @@ func HTTPPostFrigate(url string, insecure bool, payload []byte, contentType stri
 // HTTPPost performs an HTTP POST to the target URL
 // and includes auth parameters, ignoring certificates, etc
 func HTTPPost(url string, insecure bool, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
-	// Append HTTP params if any
-	if len(params) > 0 {
-		url = url + params
-	}
-
 	// New HTTP Client
 	client := http.Client{Timeout: time.Duration(HTTPTimeout) * time.Second}
 
@@ -266,9 +279,54 @@ func HTTPPost(url string, insecure bool, payload []byte, params string, headers 
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
 	}
 
+	return httpPost(url, &client, "", insecure, payload, params, headers...)
+}
+
+// HTTPPostProxied is HTTPPost with the transport resolved from a
+// per-profile proxy setting (see the proxyx package): the request goes
+// through the configured outbound proxy unless the setting forces a
+// direct connection or the target is on the bypass list. Only
+// notification senders use it — Frigate-bound POSTs go through
+// HTTPPostFrigate and never touch the proxy. When the proxy itself is
+// unreachable the returned error names it (with any password masked);
+// there is deliberately no silent fallback to a direct connection.
+func HTTPPostProxied(url string, insecure bool, proxySetting string, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	client := proxyx.Client(proxySetting, time.Duration(HTTPTimeout)*time.Second, insecure)
+	return httpPost(url, client, proxySetting, insecure, payload, params, headers...)
+}
+
+// HTTPPostProxiedOnce is HTTPPostProxied with exactly one attempt. Senders
+// whose API may have accepted a message even though the response was lost
+// (Pushover, whose previous client sent once) use it: retrying a
+// non-idempotent delivery can produce duplicate notifications.
+func HTTPPostProxiedOnce(url string, insecure bool, proxySetting string, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	client := proxyx.Client(proxySetting, time.Duration(HTTPTimeout)*time.Second, insecure)
+	return httpPostAttempts(url, client, proxySetting, insecure, payload, params, 1, headers...)
+}
+
+func httpPost(url string, client *http.Client, proxySetting string, insecure bool, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
+	return httpPostAttempts(url, client, proxySetting, insecure, payload, params, HTTPMaxAttempts, headers...)
+}
+
+func httpPostAttempts(url string, client *http.Client, proxySetting string, insecure bool, payload []byte, params string, maxAttempts int, headers ...map[string]string) ([]byte, error) {
+	// Append HTTP params if any
+	if len(params) > 0 {
+		url = url + params
+	}
+
+	// The historical loop had a hard cap of six attempts; keep it so a
+	// misconfigured attempt count cannot spin forever (and never leaves
+	// the loop with a nil response).
+	attempts := maxAttempts
+	if attempts < 1 {
+		attempts = 1
+	}
+	if attempts > 6 {
+		attempts = 6
+	}
+
 	var response *http.Response
-	retry := 1
-	for retry <= 6 {
+	for attempt := 1; ; attempt++ {
 		// Setup new HTTP Request
 		req, err := http.NewRequest(http.MethodPost, url, bytes.NewBuffer(payload))
 		if err != nil {
@@ -320,23 +378,24 @@ func HTTPPost(url string, insecure bool, payload []byte, params string, headers 
 		response, err = client.Do(req)
 		if err == nil {
 			break
-		} else {
-			if retry == HTTPMaxAttempts {
-				log.Warn().
-					Int("attempt", retry).
-					Int("max_tries", HTTPMaxAttempts).
-					Err(err).
-					Msg("HTTP Request failed, retries exceeded")
-				return nil, err
-			}
-			log.Warn().
-				Int("attempt", retry).
-				Int("max_tries", HTTPMaxAttempts).
-				Err(err).
-				Msg("HTTP Request failed, retrying in 2 seconds...")
-			retry += 1
-			time.Sleep(2 * time.Second)
 		}
+		if attempt >= attempts {
+			log.Warn().
+				Int("attempt", attempt).
+				Int("max_tries", attempts).
+				Err(err).
+				Msg("HTTP Request failed, retries exceeded")
+			if proxyx.WouldUseProxy(proxySetting, url) {
+				return nil, fmt.Errorf("request via proxy %s failed: %w", proxyx.Describe(proxySetting), err)
+			}
+			return nil, err
+		}
+		log.Warn().
+			Int("attempt", attempt).
+			Int("max_tries", attempts).
+			Err(err).
+			Msg("HTTP Request failed, retrying in 2 seconds...")
+		time.Sleep(2 * time.Second)
 	}
 
 	defer response.Body.Close()

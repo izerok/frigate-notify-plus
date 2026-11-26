@@ -341,8 +341,8 @@ func TestSendTelegramClipTranscode(t *testing.T) {
 
 			origNewBot := newTelegramBot
 			defer func() { newTelegramBot = origNewBot }()
-			newTelegramBot = func(token string) (*tgbotapi.BotAPI, error) {
-				return tgbotapi.NewBotAPIWithAPIEndpoint(token, tg.URL+"/bot%s/%s")
+			newTelegramBot = func(profile models.Telegram) (*tgbotapi.BotAPI, error) {
+				return tgbotapi.NewBotAPIWithAPIEndpoint(profile.Token, tg.URL+"/bot%s/%s")
 			}
 
 			origTemplates := TemplateFiles

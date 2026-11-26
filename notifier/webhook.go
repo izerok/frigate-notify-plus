@@ -113,10 +113,10 @@ func SendWebhook(event models.Event, provider notifMeta) {
 	params := renderHTTPKV(profile.Params, event, "params", "Webhook")
 	paramString := util.BuildHTTPParams(params...)
 	if strings.ToUpper(profile.Method) == "GET" {
-		_, err = util.HTTPGet(profile.Server, profile.Insecure, paramString, headers...)
+		_, err = util.HTTPGetProxied(profile.Server, profile.Insecure, profile.Proxy, paramString, headers...)
 
 	} else {
-		_, err = util.HTTPPost(profile.Server, profile.Insecure, []byte(message), paramString, headers...)
+		_, err = util.HTTPPostProxied(profile.Server, profile.Insecure, profile.Proxy, []byte(message), paramString, headers...)
 	}
 
 	if err != nil {

@@ -194,7 +194,10 @@ func main() {
 		log.Debug().Msg("App monitoring enabled.")
 		go func() {
 			for {
-				_, err := util.HTTPGet(config.ConfigData.Monitor.URL, config.ConfigData.Monitor.Insecure, "")
+				// The check-in follows the notification outbound proxy
+				// (it is a public-internet ping like the notifications
+				// themselves); it carries no per-profile setting.
+				_, err := util.HTTPGetProxied(config.ConfigData.Monitor.URL, config.ConfigData.Monitor.Insecure, "", "")
 				if err != nil {
 					config.Internal.Status.Monitor = err.Error()
 					log.Warn().

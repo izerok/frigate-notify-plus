@@ -124,6 +124,18 @@ alerts:
       # Seconds of inactivity after notifications stop before requesting a GenAI activity summary
       # from Frigate covering the entire activity period across all cameras (Default: 300, 0 to disable)
       summary_idle_time: 300
+    # Outbound proxy for notification delivery (optional). Applies to notifications only;
+    # connections to the Frigate server are never proxied.
+    # proxy:
+    #   # http://, https://, socks5:// or socks5h://, optionally with user:password@ credentials
+    #   url: http://192.168.1.10:7890
+    #   # Hosts that must never be proxied (hostnames, domain suffixes, CIDRs, localhost).
+    #   # The Frigate server host is always bypassed automatically.
+    #   no_proxy:
+    #     - 192.168.0.0/16
+    #     - localhost
+    # Each provider profile also accepts its own `proxy:` setting: empty follows this
+    # global proxy, `direct` forces a direct connection, or a proxy URL of its own.
 
   # If configured, ignore events between times below
   quiet:
