@@ -143,6 +143,112 @@ func HTTPGet(url string, insecure bool, params string, headers ...map[string]str
 	return body, nil
 }
 
+// HTTPPostFrigate performs a single HTTP POST with the same treatment
+// HTTPGet applies to GET requests: the shared cookie jar, a Frigate login
+// session via checkFrigateAuth when auth is enabled, InsecureSkipVerify
+// when insecure is set, the given headers and the shared User-Agent. It
+// differs from HTTPPost in two deliberate ways: the timeout is supplied by
+// the caller instead of the global HTTP timeout, and there is no retry
+// loop — it is meant for long-running, non-idempotent Frigate calls (e.g.
+// GenAI chat completions) where silently re-sending could duplicate
+// minutes of server-side work. It also does not turn a non-2xx status
+// into an error; it returns the response body and status code so the
+// caller can surface the server's own error message. err is only non-nil
+// when the request itself could not be sent or read.
+func HTTPPostFrigate(url string, insecure bool, payload []byte, contentType string, timeout time.Duration, headers ...map[string]string) ([]byte, int, error) {
+	// New HTTP Client
+	client := &http.Client{
+		Timeout: timeout,
+		Jar:     cookies,
+	}
+
+	// Ignore SSL verification if set
+	if insecure {
+		client.Transport = &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true}}
+	}
+
+	// Set auth cookies if Frigate request & auth is enabled
+	if strings.HasPrefix(url, FrigateServer) && AuthEnabled {
+		// `/api/profile` is used to check token validity, so skip auth check
+		if !strings.HasSuffix(url, "/api/profile") {
+			if err := checkFrigateAuth(); err != nil {
+				return nil, 0, err
+			}
+		}
+	}
+
+	// Setup new HTTP Request
+	var body io.Reader
+	if payload != nil {
+		body = bytes.NewReader(payload)
+	}
+	req, err := http.NewRequest(http.MethodPost, url, body)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// Add headers
+	if len(headers) > 0 {
+		for _, h := range headers {
+			for k, v := range h {
+				req.Header.Add(k, v)
+			}
+		}
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+	// Set User Agent
+	setUserAgent(req)
+
+	// Remove authorization header value for logging
+	var logheaders []map[string]string
+	for _, h := range headers {
+		for k := range h {
+			if strings.ToLower(k) == "authorization" {
+				modifiedHeader := make(map[string]string)
+				modifiedHeader[k] = "--secret removed--"
+				logheaders = append(logheaders, modifiedHeader)
+			} else {
+				logheaders = append(logheaders, h)
+			}
+		}
+	}
+
+	// Send HTTP POST
+	log.Trace().
+		Str("url", url).
+		Interface("headers", logheaders).
+		Bool("insecure", insecure).
+		Msg("HTTP POST (Frigate)")
+	response, err := client.Do(req)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer response.Body.Close()
+
+	// Read response body
+	respBody, err := io.ReadAll(response.Body)
+	if err != nil {
+		return nil, response.StatusCode, err
+	}
+
+	if json.Valid(respBody) {
+		log.Trace().
+			RawJSON("body", respBody).
+			Int("status_code", response.StatusCode).
+			Msg("HTTP Response")
+	} else {
+		log.Trace().
+			Str("body", string(respBody)).
+			Int("status_code", response.StatusCode).
+			Msg("HTTP Response")
+	}
+
+	return respBody, response.StatusCode, nil
+}
+
 // HTTPPost performs an HTTP POST to the target URL
 // and includes auth parameters, ignoring certificates, etc
 func HTTPPost(url string, insecure bool, payload []byte, params string, headers ...map[string]string) ([]byte, error) {
